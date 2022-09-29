@@ -1,26 +1,20 @@
-use iced::{ Command, Container, Element, Length, Scrollable, Text, alignment, container, scrollable };
+use iced::{ Alignment, Column, Command, Container, Element, Length, Scrollable, Text, TextInput, alignment, container, scrollable, text_input };
 
+use crate::autocomplete::{
+	file_autocomplete,
+	file_fuzzyfind,
+};
 use crate::launcher::launch_program;
 use crate::style;
 use crate::types;
 
-#[derive(Debug)]
-pub struct View {
-	programs_autocomplete: Option<types::SharedVec<String>>,
-	programs_fuzzy: Option<types::SharedVec<String>>,
-	scroll: scrollable::State,
-	search: String,
-	selected_program: Option<usize>,
-	state: State,
-}
-
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Message {
-	Autocomplete(String, Option<types::SharedVec<String>>),
+	Autocomplete,
 	SelectUp,
 	SelectDown,
 	StartProgram,
-	UpdateSearch(String, Option<types::SharedVec<String>>),
+	Typed(String),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -29,12 +23,26 @@ pub enum State {
 	ShowFuzzy,
 }
 
+#[derive(Debug)]
+pub struct View {
+	input_state: text_input::State,
+	programs: Option<types::SharedVec<String>>,
+	programs_autocomplete: Option<Vec<String>>,
+	programs_fuzzy: Option<Vec<String>>,
+	scroll_state: scrollable::State,
+	search: String,
+	selected_program: Option<usize>,
+	state: State,
+}
+
 impl View {
-	pub fn new() -> Self {
+	pub fn new(programs: Option<types::SharedVec<String>>) -> Self {
 		View {
+			input_state: text_input::State::focused(),
+			programs,
 			programs_autocomplete: None,
 			programs_fuzzy: None,
-			scroll: scrollable::State::new(),
+			scroll_state: scrollable::State::new(),
 			search: String::new(),
 			selected_program: None,
 			state: State::ShowFuzzy,
@@ -44,9 +52,9 @@ impl View {
 	// cannot take self b/c of mutability rules
 	fn get_list_from_state<'a>(
 		state: State,
-		autocomplete: &'a Option<types::SharedVec<String>>,
-		fuzzy: &'a Option<types::SharedVec<String>>
-	) -> &'a Option<types::SharedVec<String>> {
+		autocomplete: &'a Option<Vec<String>>,
+		fuzzy: &'a Option<Vec<String>>
+	) -> &'a Option<Vec<String>> {
 		match state {
 			State::ShowAutocomplete => {
 				&autocomplete
@@ -57,19 +65,30 @@ impl View {
 		}
 	}
 
+	// detect if we are in project list mode
+	fn is_project_mode(search: &String) -> bool {
+		if &search[0..12] == "open-project" {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	pub fn update(&mut self, message: Message) -> Command<Message> {
 		match message {
-			Message::Autocomplete(search, autocomplete) => {
-				self.state = State::ShowAutocomplete;
-				self.programs_autocomplete = autocomplete;
-				self.selected_program = Some(0);
-				self.search = search;
-			},
-			Message::UpdateSearch(search, fuzzy) => {
-				self.state = State::ShowFuzzy;
-				self.programs_fuzzy = fuzzy;
-				self.selected_program = None;
-				self.search = search;
+			Message::Autocomplete => {
+				if let Some(autocomplete) = self.programs_autocomplete.as_ref() {
+					if autocomplete.len() == 0 {
+						return Command::none();
+					}
+
+					self.state = State::ShowAutocomplete;
+					self.selected_program = Some(0);
+					self.search = autocomplete[0].clone();
+
+					self.programs_autocomplete = file_autocomplete(&self.programs.as_ref().unwrap(), &self.search);
+					self.programs_fuzzy = file_fuzzyfind(&self.programs.as_ref().unwrap(), &self.search);
+				}
 			},
 			Message::StartProgram => {
 				if let Some(index) = self.selected_program {
@@ -98,13 +117,22 @@ impl View {
 					self.selected_program = Some(self.selected_program.unwrap() - 1);
 				}
 			},
+			Message::Typed(search) => {
+				self.state = State::ShowFuzzy;
+				self.selected_program = None;
+				self.search = search;
+				self.input_state.move_cursor_to_end();
+
+				self.programs_autocomplete = file_autocomplete(&self.programs.as_ref().unwrap(), &self.search);
+				self.programs_fuzzy = file_fuzzyfind(&self.programs.as_ref().unwrap(), &self.search);
+			},
 		}
 
 		Command::none()
 	}
 
 	pub fn view(&mut self) -> Element<Message> {
-		let mut scrollable = Scrollable::new(&mut self.scroll);
+		let mut scrollable = Scrollable::new(&mut self.scroll_state);
 		let list = View::get_list_from_state(self.state, &self.programs_autocomplete, &self.programs_fuzzy).as_ref();
 		if let Some(programs) = list.as_ref() {
 			let mut index = 0;
@@ -131,6 +159,24 @@ impl View {
 			}
 		}
 
-		scrollable.into()
+		Column::new()
+			.padding(0)
+			.align_items(Alignment::Center)
+			.push(
+				TextInput::new(
+					&mut self.input_state,
+					"",
+					&self.search,
+					Message::Typed,
+				)
+					.size(15)
+					.padding(7)
+					.style(style::SearchInput)
+			)
+			.push(
+				scrollable
+			)
+			.into()
+
 	}
 }

@@ -1,7 +1,6 @@
 mod autocomplete;
 mod launcher;
 mod path_interpreter;
-mod program_search;
 mod programs_list;
 mod style;
 mod types;
@@ -20,15 +19,11 @@ use path_interpreter::{
 #[derive(Debug)]
 enum Message {
 	EventOccurred(iced_native::Event),
-	ProgramSearchMessage(program_search::Message),
 	ProgramsListMessage(programs_list::Message),
 }
 
 struct Window {
-	program_search: program_search::View,
-	programs: Vec<String>,
-	programs_autocomplete: types::SharedVec<String>,
-	programs_fuzzy: types::SharedVec<String>,
+	programs: Option<types::SharedVec<String>>,
 	programs_list: programs_list::View,
 }
 
@@ -38,13 +33,11 @@ impl Application for Window {
 	type Flags = ();
 
 	fn new(_flags: ()) -> (Self, Command<Self::Message>) {
+		let programs = Some(Arc::new(get_programs().unwrap()));
 		(
 			Window {
-				program_search: program_search::View::new(),
-				programs: get_programs().unwrap(),
-				programs_autocomplete: Arc::new(Vec::new()),
-				programs_fuzzy: Arc::new(Vec::new()),
-				programs_list: programs_list::View::new(),
+				programs_list: programs_list::View::new(programs.clone()),
+				programs,
 			},
 			Command::none()
 		)
@@ -92,15 +85,9 @@ impl Application for Window {
 						std::process::exit(0);
 					},
 					iced_native::keyboard::KeyCode::Tab => {
-						if self.programs_autocomplete.len() > 0 {
-							self.update( // send through Application update so that the program list gets its state updated
-								Self::Message::ProgramSearchMessage(
-									program_search::Message::Autocomplete(self.programs_autocomplete[0].clone())
-								)
-							)
-						} else {
-							Command::none()
-						}
+						self.programs_list.update(programs_list::Message::Autocomplete).map(move |message| {
+							Self::Message::ProgramsListMessage(message)
+						})
 					},
 					iced_native::keyboard::KeyCode::Up => {
 						self.programs_list.update(
@@ -112,39 +99,6 @@ impl Application for Window {
 					_ => Command::none(),
 				}
 			},
-			Message::ProgramSearchMessage(message) => {
-				if let program_search::Message::Typed(search) = &message {
-					// generate fuzzy and autocomplete lists
-					self.programs_autocomplete = Arc::new(file_autocomplete(&self.programs, &search).unwrap());
-					self.programs_fuzzy = Arc::new(file_fuzzyfind(&self.programs, &search).unwrap());
-
-					self.programs_list.update(
-						programs_list::Message::UpdateSearch(
-							search.clone(),
-							Some(self.programs_fuzzy.clone()),
-						)
-					).map(move |message| {
-						Self::Message::ProgramsListMessage(message)
-					});
-				} else if let program_search::Message::Autocomplete(search) = &message {
-					// generate fuzzy and autocomplete lists
-					self.programs_autocomplete = Arc::new(file_autocomplete(&self.programs, &search).unwrap());
-					self.programs_fuzzy = Arc::new(file_fuzzyfind(&self.programs, &search).unwrap());
-
-					self.programs_list.update(
-						programs_list::Message::Autocomplete(
-							search.clone(),
-							Some(self.programs_autocomplete.clone()),
-						)
-					).map(move |message| {
-						Self::Message::ProgramsListMessage(message)
-					});
-				}
-
-				self.program_search.update(message).map(move |message| {
-					Self::Message::ProgramSearchMessage(message)
-				})
-			},
 			Message::ProgramsListMessage(message) => {
 				self.programs_list.update(message).map(move |message| {
 					Self::Message::ProgramsListMessage(message)
@@ -155,20 +109,10 @@ impl Application for Window {
 
 	fn view(&mut self) -> Element<Self::Message> {
 		Container::new(
-			Column::new()
-				.padding(0)
-				.align_items(Alignment::Center)
-				.push(
-					self.program_search.view().map(move |message| {
-						Self::Message::ProgramSearchMessage(message)
-					})
-				)
-				.push(
-					self.programs_list.view().map(move |message| {
-						Self::Message::ProgramsListMessage(message)
-					})
-				)
-			)
+			self.programs_list.view().map(move |message| {
+				Self::Message::ProgramsListMessage(message)
+			})
+		)
 			.height(Length::Fill)
 			.padding(1)
 			.style(style::Application)
