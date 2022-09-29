@@ -17,7 +17,7 @@ pub enum Message {
 impl View {
 	pub fn new() -> Self {
 		View {
-			input: text_input::State::new(),
+			input: text_input::State::focused(),
 			search: String::new(),
 		}
 	}
