@@ -7,15 +7,15 @@ pub const DARK_PURPLE: Color = Color::from_rgb(
 );
 
 pub const TEXT_COLOR: Color = Color::from_rgb(
-	0xB7 as f32 / 255.0,
-	0xAC as f32 / 255.0,
-	0xB7 as f32 / 255.0,
+	0xD3 as f32 / 255.0,
+	0xC6 as f32 / 255.0,
+	0xD3 as f32 / 255.0,
 );
 
 pub const DISABLED_TEXT_COLOR: Color = Color::from_rgb(
-	0x80 as f32 / 255.0,
-	0x78 as f32 / 255.0,
-	0x80 as f32 / 255.0,
+	0xB7 as f32 / 255.0,
+	0xAC as f32 / 255.0,
+	0xB7 as f32 / 255.0,
 );
 
 pub const LIGHT_PURPLE: Color = Color::from_rgb(
