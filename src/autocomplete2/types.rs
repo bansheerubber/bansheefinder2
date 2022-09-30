@@ -1,8 +1,9 @@
 pub type List = Option<Vec<String>>;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum ActiveList {
 	Autocomplete,
+	#[default]
 	FuzzyFinder,
 }
 
@@ -22,4 +23,9 @@ pub trait State {
 			ActiveList::FuzzyFinder => self.get_fuzzyfinder_list(),
 		}
 	}
+}
+
+pub trait Factory<T: State> {
+	fn should_create(&self, search: &String) -> bool;
+	fn create(&self) -> T;
 }
