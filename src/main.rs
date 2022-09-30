@@ -1,4 +1,5 @@
 mod autocomplete;
+mod autocomplete2;
 mod launcher;
 mod path_interpreter;
 mod programs_list;
