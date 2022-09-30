@@ -37,7 +37,7 @@ impl Application for Window {
 		let programs = Some(Arc::new(get_programs().unwrap()));
 		(
 			Window {
-				programs_list: programs_list::View::new(programs.clone()),
+				programs_list: programs_list::View::new(),
 				programs,
 			},
 			Command::none()

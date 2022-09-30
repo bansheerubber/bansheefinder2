@@ -3,6 +3,7 @@ use crate::autocomplete2::types::{
 	Factory,
 	List,
 	State,
+	get_ui_list,
 };
 use crate::path_interpreter::get_programs;
 
@@ -53,6 +54,7 @@ pub struct DefaultState {
 	fuzzyfind: List,
 	programs: Vec<String>,
 	search: String,
+	selected: Option<usize>,
 }
 
 impl State for DefaultState {
@@ -71,6 +73,9 @@ impl State for DefaultState {
 	fn update_search(&mut self, search: String) {
 		self.search = search;
 		self.active_list = ActiveList::FuzzyFinder;
+
+		self.autocomplete = autocomplete(&self.programs, &self.search);
+		self.fuzzyfind = fuzzyfind(&self.programs, &self.search);
 	}
 
 	fn autocomplete(&mut self) -> String {
@@ -85,11 +90,45 @@ impl State for DefaultState {
 		self.autocomplete = autocomplete(&self.programs, &self.search);
 		self.fuzzyfind = fuzzyfind(&self.programs, &self.search);
 
+		self.selected = Some(0);
+
 		return result;
 	}
 
 	fn get_command(&self) -> String {
 		self.search.clone()
+	}
+
+	fn select_up(&mut self) -> String {
+		let list = get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref();
+		if let None = list {
+			self.selected = None;
+		} else if let None = self.selected {
+			self.selected = Some(0);
+		} else if self.selected.unwrap() != list.unwrap().len() - 1 {
+			self.selected = Some(self.selected.unwrap() + 1);
+		}
+
+		if let Some(index) = self.selected {
+			list.unwrap()[index].clone()
+		} else {
+			String::new()
+		}
+	}
+
+	fn select_down(&mut self) -> String {
+		let list = get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref();
+		if let None = list {
+			self.selected = None;
+		} else if self.selected.unwrap() != 0 {
+			self.selected = Some(self.selected.unwrap() - 1);
+		}
+
+		if let Some(index) = self.selected {
+			list.unwrap()[index].clone()
+		} else {
+			String::new()
+		}
 	}
 }
 
@@ -97,7 +136,7 @@ impl State for DefaultState {
 pub struct DefaultFactory;
 
 impl Factory<DefaultState> for DefaultFactory {
-	fn should_create(&self, search: &String) -> bool {
+	fn should_create(search: &String) -> bool {
 		if search.len() == 0 {
 			true
 		} else {
@@ -105,7 +144,7 @@ impl Factory<DefaultState> for DefaultFactory {
 		}
 	}
 
-	fn create(&self) -> DefaultState {
+	fn create() -> DefaultState {
 		DefaultState {
 			programs: get_programs().unwrap(),
 			..DefaultState::default()
