@@ -1,5 +1,6 @@
 pub mod default;
 pub mod open_project;
+pub mod sudo;
 mod types;
 
 pub use types::State;

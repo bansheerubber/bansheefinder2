@@ -1,3 +1,5 @@
+use crate::autocomplete::open_project::OpenProjectFactory;
+use crate::autocomplete::sudo::SudoFactory;
 use crate::autocomplete::types::{
 	ActiveList,
 	Factory,
@@ -5,7 +7,6 @@ use crate::autocomplete::types::{
 	State,
 	get_ui_list,
 };
-use crate::autocomplete::open_project::OpenProjectFactory;
 use crate::path_interpreter::get_programs;
 
 fn fuzzyfind(programs: &Vec<String>, search: &String) -> Option<Vec<String>> {
@@ -69,7 +70,7 @@ impl Default for DefaultState {
 			factory: Box::new(DefaultFactory),
 			fuzzyfind: List::default(),
 			passthrough: None,
-			passthrough_factories: vec![Box::new(OpenProjectFactory)],
+			passthrough_factories: vec![Box::new(OpenProjectFactory), Box::new(SudoFactory)],
 			preamble: String::new(),
 			programs: get_programs().unwrap(),
 			search: String::default(),
@@ -128,7 +129,9 @@ impl State for DefaultState {
 		}
 
 		if let Some(passthrough) = self.passthrough.as_mut() {
-			passthrough.update_search(search.replace(passthrough.get_preamble(), ""));
+			let mut search = search;
+			search.drain(0..passthrough.get_preamble().len());
+			passthrough.update_search(search)
 		} else {
 			self.search = search;
 			self.active_list = ActiveList::FuzzyFinder;

@@ -5,7 +5,7 @@ use crate::autocomplete::types::{
 	State,
 	get_ui_list,
 };
-use crate::path_interpreter::get_projects;
+use crate::path_interpreter::get_programs;
 
 fn fuzzyfind(projects: &Vec<String>, search: &String) -> Option<Vec<String>> {
 	let mut output = projects.iter()
@@ -47,33 +47,33 @@ fn autocomplete(projects: &Vec<String>, search: &String) -> Option<Vec<String>> 
 	Some(output)
 }
 
-pub struct OpenProjectState {
+pub struct SudoState {
 	active_list: ActiveList,
 	autocomplete: List,
 	factory: Box<dyn Factory>,
 	fuzzyfind: List,
 	preamble: String,
-	projects: Vec<String>,
+	programs: Vec<String>,
 	search: String,
 	selected: Option<usize>,
 }
 
-impl Default for OpenProjectState {
+impl Default for SudoState {
 	fn default() -> Self {
-		OpenProjectState {
+		SudoState {
 			active_list: ActiveList::default(),
 			autocomplete: List::default(),
-			factory: Box::new(OpenProjectFactory),
+			factory: Box::new(SudoFactory),
 			fuzzyfind: List::default(),
-			preamble: String::from("open-project "),
-			projects: get_projects().unwrap(),
+			preamble: String::from("sudo "),
+			programs: get_programs().unwrap(),
 			search: String::default(),
 			selected: None,
 		}
 	}
 }
 
-impl State for OpenProjectState {
+impl State for SudoState {
 	fn get_factory(&self) -> &Box<dyn Factory> {
 		&self.factory
 	}
@@ -98,8 +98,8 @@ impl State for OpenProjectState {
 		self.search = search;
 		self.active_list = ActiveList::FuzzyFinder;
 
-		self.autocomplete = autocomplete(&self.projects, &self.search);
-		self.fuzzyfind = fuzzyfind(&self.projects, &self.search);
+		self.autocomplete = autocomplete(&self.programs, &self.search);
+		self.fuzzyfind = fuzzyfind(&self.programs, &self.search);
 	}
 
 	fn autocomplete(&mut self) -> String {
@@ -110,8 +110,8 @@ impl State for OpenProjectState {
 		} else {
 			self.search.clone()
 		};
-		self.autocomplete = autocomplete(&self.projects, &self.search);
-		self.fuzzyfind = fuzzyfind(&self.projects, &self.search);
+		self.autocomplete = autocomplete(&self.programs, &self.search);
+		self.fuzzyfind = fuzzyfind(&self.programs, &self.search);
 
 		self.selected = Some(0);
 
@@ -156,11 +156,11 @@ impl State for OpenProjectState {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct OpenProjectFactory;
+pub struct SudoFactory;
 
-impl Factory for OpenProjectFactory {
+impl Factory for SudoFactory {
 	fn should_create(&self, search: &String) -> bool {
-		if search.len() >= 13 && &search[0..12] == "open-project" {
+		if search.len() >= 5 && &search[0..4] == "sudo" {
 			true
 		} else {
 			false
@@ -168,6 +168,6 @@ impl Factory for OpenProjectFactory {
 	}
 
 	fn create(&self) -> Box<dyn State> {
-		Box::new(OpenProjectState::default())
+		Box::new(SudoState::default())
 	}
 }
