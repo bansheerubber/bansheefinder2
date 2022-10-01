@@ -3,14 +3,8 @@ mod launcher;
 mod path_interpreter;
 mod programs_list;
 mod style;
-mod types;
 
 use iced::{ Application, Command, Container, Element, Length, Settings, Subscription, executor };
-use std::sync::Arc;
-
-use path_interpreter::{
-	get_programs,
-};
 
 #[derive(Debug)]
 enum Message {
@@ -19,7 +13,6 @@ enum Message {
 }
 
 struct Window {
-	programs: Option<types::SharedVec<String>>,
 	programs_list: programs_list::View,
 }
 
@@ -29,11 +22,9 @@ impl Application for Window {
 	type Flags = ();
 
 	fn new(_flags: ()) -> (Self, Command<Self::Message>) {
-		let programs = Some(Arc::new(get_programs().unwrap()));
 		(
 			Window {
 				programs_list: programs_list::View::new(),
-				programs,
 			},
 			Command::none()
 		)
