@@ -35,7 +35,7 @@ pub trait State {
 	}
 }
 
-pub trait Factory<T: State> {
-	fn should_create(search: &String) -> bool;
-	fn create() -> T;
+pub trait Factory {
+	fn should_create(&self, search: &String) -> bool;
+	fn create(&self) -> Box<dyn State>;
 }

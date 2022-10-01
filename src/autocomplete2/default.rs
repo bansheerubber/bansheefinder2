@@ -47,14 +47,28 @@ fn autocomplete(programs: &Vec<String>, search: &String) -> Option<Vec<String>> 
 	Some(output)
 }
 
-#[derive(Clone, Debug, Default)]
 pub struct DefaultState {
 	active_list: ActiveList,
 	autocomplete: List,
 	fuzzyfind: List,
+	passthrough_factories: Vec::<Box<dyn Factory>>,
 	programs: Vec<String>,
 	search: String,
 	selected: Option<usize>,
+}
+
+impl Default for DefaultState {
+	fn default() -> Self {
+		DefaultState {
+			active_list: ActiveList::default(),
+			autocomplete: List::default(),
+			fuzzyfind: List::default(),
+			passthrough_factories: Vec::default(),
+			programs: get_programs().unwrap(),
+			search: String::default(),
+			selected: None,
+		}
+	}
 }
 
 impl State for DefaultState {
@@ -132,11 +146,11 @@ impl State for DefaultState {
 	}
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct DefaultFactory;
 
-impl Factory<DefaultState> for DefaultFactory {
-	fn should_create(search: &String) -> bool {
+impl Factory for DefaultFactory {
+	fn should_create(&self, search: &String) -> bool {
 		if search.len() == 0 {
 			true
 		} else {
@@ -144,10 +158,7 @@ impl Factory<DefaultState> for DefaultFactory {
 		}
 	}
 
-	fn create() -> DefaultState {
-		DefaultState {
-			programs: get_programs().unwrap(),
-			..DefaultState::default()
-		}
+	fn create(&self) -> Box<dyn State> {
+		Box::new(DefaultState::default())
 	}
 }

@@ -14,13 +14,12 @@ pub enum Message {
 	Typed(String),
 }
 
-#[derive(Debug)]
 pub struct View {
 	input_state: text_input::State,
 	scroll_state: scrollable::State,
 	search: String,
 	selected: Option<String>,
-	state: DefaultState,
+	state: Box<dyn State>,
 }
 
 impl View {
@@ -30,7 +29,7 @@ impl View {
 			scroll_state: scrollable::State::new(),
 			search: String::new(),
 			selected: None,
-			state: DefaultFactory::create(),
+			state: DefaultFactory::default().create(),
 		}
 	}
 
