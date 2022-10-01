@@ -2,11 +2,13 @@ use crate::autocomplete::open_project::OpenProjectFactory;
 use crate::autocomplete::sudo::SudoFactory;
 use crate::autocomplete::types::{
 	ActiveList,
+	CommandType,
 	Factory,
 	List,
 	State,
 	get_ui_list,
 	handle_update_placeholder,
+	passthrough_command,
 	passthrough_string,
 };
 use crate::path_interpreter::get_programs;
@@ -153,12 +155,8 @@ impl State for DefaultState {
 		(result, None)
 	}
 
-	fn get_command(&self) -> String {
-		if let Some(passthrough) = self.passthrough.as_ref() {
-			format!("{}{}", self.search.clone(), passthrough.get_command())
-		} else {
-			self.search.clone()
-		}
+	fn get_command(&self) -> (String, CommandType) {
+		passthrough_command(&self.search, CommandType::Normal, &self.passthrough)
 	}
 
 	fn select_up(&mut self) -> (String, Option<String>) {

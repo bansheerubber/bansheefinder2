@@ -4,7 +4,12 @@ mod path_interpreter;
 mod programs_list;
 mod style;
 
-use iced::{ Application, Command, Container, Element, Length, Settings, Subscription, executor };
+use iced::{ Application, Command, Container, Element, Length, Settings, Subscription, Text, executor };
+
+enum CurrentView {
+	ProgramList,
+	SudoPassword,
+}
 
 #[derive(Debug)]
 enum Message {
@@ -13,7 +18,9 @@ enum Message {
 }
 
 struct Window {
+	current_view: CurrentView,
 	programs_list: programs_list::View,
+	sudo_command: Option<String>,
 }
 
 impl Application for Window {
@@ -24,7 +31,9 @@ impl Application for Window {
 	fn new(_flags: ()) -> (Self, Command<Self::Message>) {
 		(
 			Window {
+				current_view: CurrentView::ProgramList,
 				programs_list: programs_list::View::new(),
+				sudo_command: None,
 			},
 			Command::none()
 		)
@@ -62,11 +71,17 @@ impl Application for Window {
 						})
 					},
 					iced_native::keyboard::KeyCode::Enter => {
-						self.programs_list.update(
-							programs_list::Message::StartProgram
-						).map(move |message| {
-							Self::Message::ProgramsListMessage(message)
-						})
+						match self.programs_list.start_program() {
+							(command, autocomplete::CommandType::Normal) | (command, autocomplete::CommandType::OpenProject) => {
+								launcher::launch_program(command);
+							},
+							(command, autocomplete::CommandType::Sudo) => {
+								self.current_view = CurrentView::SudoPassword;
+								self.sudo_command = Some(command);
+							},
+						}
+
+						Command::none()
 					},
 					iced_native::keyboard::KeyCode::Escape => {
 						std::process::exit(0);
@@ -95,15 +110,28 @@ impl Application for Window {
 	}
 
 	fn view(&mut self) -> Element<Self::Message> {
-		Container::new(
-			self.programs_list.view().map(move |message| {
-				Self::Message::ProgramsListMessage(message)
-			})
-		)
-			.height(Length::Fill)
-			.padding(1)
-			.style(style::Application)
-			.into()
+		match self.current_view {
+			CurrentView::ProgramList => {
+				Container::new(
+					self.programs_list.view().map(move |message| {
+						Self::Message::ProgramsListMessage(message)
+					})
+				)
+					.height(Length::Fill)
+					.padding(1)
+					.style(style::Application)
+					.into()
+			},
+			CurrentView::SudoPassword => {
+				Container::new(
+					Text::new("")
+				)
+					.height(Length::Fill)
+					.padding(1)
+					.style(style::Application)
+					.into()
+			}
+		}
 	}
 }
 

@@ -1,5 +1,11 @@
 pub type List = Option<Vec<String>>;
 
+pub enum CommandType {
+	Normal,
+	OpenProject,
+	Sudo,
+}
+
 #[derive(Clone, Copy, Debug, Default)]
 pub enum ActiveList {
 	Autocomplete,
@@ -25,7 +31,7 @@ pub trait State {
 
 	fn update_search(&mut self, search: String);
 	fn autocomplete(&mut self) -> (String, Option<String>);
-	fn get_command(&self) -> String;
+	fn get_command(&self) -> (String, CommandType);
 
 	fn select_up(&mut self) -> (String, Option<String>);
 	fn select_down(&mut self) -> (String, Option<String>);
@@ -73,5 +79,18 @@ pub fn passthrough_string(
 		(format!("{}{}", search, passthrough.0), Some(passthrough.0))
 	} else {
 		(format!("{}{}", search, passthrough.0), passthrough.1)
+	}
+}
+
+pub fn passthrough_command(
+	search: &String,
+	command_type: CommandType,
+	passthrough: &Option<Box<dyn State>>
+) -> (String, CommandType) {
+	if let Some(passthrough) = passthrough.as_ref() {
+		let (command, command_type) = passthrough.get_command();
+		(format!("{}{}", search, command), command_type)
+	} else {
+		(search.clone(), command_type)
 	}
 }

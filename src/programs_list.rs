@@ -1,8 +1,7 @@
 use iced::{ Alignment, Column, Command, Container, Element, Length, Scrollable, Text, TextInput, alignment, container, scrollable, text_input };
 
-use crate::autocomplete::{ Factory, State };
+use crate::autocomplete::{ CommandType, Factory, State };
 use crate::autocomplete::default::DefaultFactory;
-use crate::launcher::launch_program;
 use crate::style;
 
 #[derive(Clone, Debug)]
@@ -10,7 +9,6 @@ pub enum Message {
 	Autocomplete,
 	SelectUp,
 	SelectDown,
-	StartProgram,
 	Typed(String),
 }
 
@@ -33,6 +31,10 @@ impl View {
 		}
 	}
 
+	pub fn start_program(&self) -> (String, CommandType) {
+		self.state.get_command()
+	}
+
 	pub fn update(&mut self, message: Message) -> Command<Message> {
 		match message {
 			Message::Autocomplete => {
@@ -46,9 +48,6 @@ impl View {
 				self.search = search_text;
 				self.selected = Some(selected_item);
 				self.input_state.move_cursor_to_end();
-			},
-			Message::StartProgram => {
-				launch_program(self.state.get_command());
 			},
 			Message::SelectUp => {
 				let (search_text, selected_item) = self.state.select_up();

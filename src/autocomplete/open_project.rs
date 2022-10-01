@@ -1,5 +1,6 @@
 use crate::autocomplete::types::{
 	ActiveList,
+	CommandType,
 	Factory,
 	List,
 	State,
@@ -118,8 +119,8 @@ impl State for OpenProjectState {
 		(result, None)
 	}
 
-	fn get_command(&self) -> String { // only returns the project folder name
-		self.search.clone()
+	fn get_command(&self) -> (String, CommandType) { // only returns the project folder name
+		(self.search.clone(), CommandType::OpenProject)
 	}
 
 	fn select_up(&mut self) -> (String, Option<String>) {
