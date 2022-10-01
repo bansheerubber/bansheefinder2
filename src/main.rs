@@ -1,18 +1,13 @@
 mod autocomplete;
-mod autocomplete2;
 mod launcher;
 mod path_interpreter;
 mod programs_list;
 mod style;
 mod types;
 
-use iced::{ Alignment, Application, Column, Command, Container, Element, Length, Settings, Subscription, executor };
+use iced::{ Application, Command, Container, Element, Length, Settings, Subscription, executor };
 use std::sync::Arc;
 
-use autocomplete::{
-	file_autocomplete,
-	file_fuzzyfind,
-};
 use path_interpreter::{
 	get_programs,
 };

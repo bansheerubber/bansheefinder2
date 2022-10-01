@@ -1,4 +1,4 @@
-use crate::autocomplete2::types::{
+use crate::autocomplete::types::{
 	ActiveList,
 	Factory,
 	List,

@@ -1,7 +1,7 @@
 use iced::{ Alignment, Column, Command, Container, Element, Length, Scrollable, Text, TextInput, alignment, container, scrollable, text_input };
 
-use crate::autocomplete2::{ Factory, State };
-use crate::autocomplete2::default::DefaultFactory;
+use crate::autocomplete::{ Factory, State };
+use crate::autocomplete::default::DefaultFactory;
 use crate::launcher::launch_program;
 use crate::style;
 

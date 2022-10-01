@@ -1,11 +1,11 @@
-use crate::autocomplete2::types::{
+use crate::autocomplete::types::{
 	ActiveList,
 	Factory,
 	List,
 	State,
 	get_ui_list,
 };
-use crate::autocomplete2::open_project::OpenProjectFactory;
+use crate::autocomplete::open_project::OpenProjectFactory;
 use crate::path_interpreter::get_programs;
 
 fn fuzzyfind(programs: &Vec<String>, search: &String) -> Option<Vec<String>> {
