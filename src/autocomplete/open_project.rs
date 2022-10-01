@@ -102,7 +102,7 @@ impl State for OpenProjectState {
 		self.fuzzyfind = fuzzyfind(&self.projects, &self.search);
 	}
 
-	fn autocomplete(&mut self) -> String {
+	fn autocomplete(&mut self) -> (String, Option<String>) {
 		self.active_list = ActiveList::Autocomplete;
 		let result = if let Some(list) = self.autocomplete.as_ref() {
 			self.search = list[0].clone();
@@ -115,7 +115,7 @@ impl State for OpenProjectState {
 
 		self.selected = Some(0);
 
-		return result;
+		(result, None)
 	}
 
 	fn get_command(&self) -> String { // only returns the project folder name

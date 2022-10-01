@@ -36,8 +36,15 @@ impl View {
 	pub fn update(&mut self, message: Message) -> Command<Message> {
 		match message {
 			Message::Autocomplete => {
-				self.search = self.state.autocomplete();
-				self.selected = Some(self.search.clone());
+				let (search_text, selected_item) = self.state.autocomplete();
+				let selected_item = if let Some(item) = selected_item {
+					item
+				} else {
+					search_text.clone()
+				};
+
+				self.search = search_text;
+				self.selected = Some(selected_item);
 				self.input_state.move_cursor_to_end();
 			},
 			Message::StartProgram => {

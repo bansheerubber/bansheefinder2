@@ -1,9 +1,12 @@
+use crate::autocomplete::open_project::OpenProjectFactory;
 use crate::autocomplete::types::{
 	ActiveList,
 	Factory,
 	List,
 	State,
 	get_ui_list,
+	handle_update_placeholder,
+	passthrough_string,
 };
 use crate::path_interpreter::get_programs;
 
@@ -52,6 +55,8 @@ pub struct SudoState {
 	autocomplete: List,
 	factory: Box<dyn Factory>,
 	fuzzyfind: List,
+	passthrough: Option<Box<dyn State>>,
+	passthrough_factories: Vec::<Box<dyn Factory>>,
 	preamble: String,
 	programs: Vec<String>,
 	search: String,
@@ -65,6 +70,8 @@ impl Default for SudoState {
 			autocomplete: List::default(),
 			factory: Box::new(SudoFactory),
 			fuzzyfind: List::default(),
+			passthrough: None,
+			passthrough_factories: vec![Box::new(OpenProjectFactory)],
 			preamble: String::from("sudo "),
 			programs: get_programs().unwrap(),
 			search: String::default(),
@@ -83,26 +90,52 @@ impl State for SudoState {
 	}
 
 	fn get_active_list(&self) -> ActiveList {
-		self.active_list
+		if let Some(passthrough) = self.passthrough.as_ref() {
+			passthrough.get_active_list()
+		} else {
+			self.active_list
+		}
 	}
 
 	fn get_autocomplete_list(&self) -> &List {
-		&self.autocomplete
+		if let Some(passthrough) = self.passthrough.as_ref() {
+			passthrough.get_autocomplete_list()
+		} else {
+			&self.autocomplete
+		}
 	}
 
 	fn get_fuzzyfinder_list(&self) -> &List {
-		&self.fuzzyfind
+		if let Some(passthrough) = self.passthrough.as_ref() {
+			passthrough.get_fuzzyfinder_list()
+		} else {
+			&self.fuzzyfind
+		}
 	}
 
 	fn update_search(&mut self, search: String) {
-		self.search = search;
-		self.active_list = ActiveList::FuzzyFinder;
+		if handle_update_placeholder(&search, &mut self.passthrough, &self.passthrough_factories) {
+			let mut search = search;
+			search.drain(0..self.passthrough.as_ref().unwrap().get_preamble().len());
 
-		self.autocomplete = autocomplete(&self.programs, &self.search);
-		self.fuzzyfind = fuzzyfind(&self.programs, &self.search);
+			self.selected = Some(0);
+			self.search = self.passthrough.as_ref().unwrap().get_preamble().clone();
+
+			self.passthrough.as_mut().unwrap().update_search(search);
+		} else {
+			self.search = search;
+			self.active_list = ActiveList::FuzzyFinder;
+
+			self.autocomplete = autocomplete(&self.programs, &self.search);
+			self.fuzzyfind = fuzzyfind(&self.programs, &self.search);
+		}
 	}
 
-	fn autocomplete(&mut self) -> String {
+	fn autocomplete(&mut self) -> (String, Option<String>) {
+		if let Some(passthrough) = self.passthrough.as_mut() {
+			return passthrough_string(&self.search, passthrough.autocomplete());
+		}
+
 		self.active_list = ActiveList::Autocomplete;
 		let result = if let Some(list) = self.autocomplete.as_ref() {
 			self.search = list[0].clone();
@@ -115,14 +148,22 @@ impl State for SudoState {
 
 		self.selected = Some(0);
 
-		return result;
+		(result, None)
 	}
 
 	fn get_command(&self) -> String { // only returns the project folder name
-		self.search.clone()
+		if let Some(passthrough) = self.passthrough.as_ref() {
+			format!("{}{}", self.search.clone(), passthrough.get_command())
+		} else {
+			self.search.clone()
+		}
 	}
 
 	fn select_up(&mut self) -> (String, Option<String>) {
+		if let Some(passthrough) = self.passthrough.as_mut() {
+			return passthrough_string(&self.search, passthrough.select_up());
+		}
+
 		let list = get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref();
 		if let None = list {
 			self.selected = None;
@@ -140,6 +181,10 @@ impl State for SudoState {
 	}
 
 	fn select_down(&mut self) -> (String, Option<String>) {
+		if let Some(passthrough) = self.passthrough.as_mut() {
+			return passthrough_string(&self.search, passthrough.select_down());
+		}
+
 		let list = get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref();
 		if let None = list {
 			self.selected = None;

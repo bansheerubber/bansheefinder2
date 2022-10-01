@@ -6,6 +6,8 @@ use crate::autocomplete::types::{
 	List,
 	State,
 	get_ui_list,
+	handle_update_placeholder,
+	passthrough_string,
 };
 use crate::path_interpreter::get_programs;
 
@@ -113,25 +115,14 @@ impl State for DefaultState {
 	}
 
 	fn update_search(&mut self, search: String) {
-		if let Some(passthrough) = self.passthrough.as_mut() { // reset passthrough if it is no longer valid
-			if !passthrough.get_factory().should_create(&search) {
-				self.passthrough = None;
-			}
-		} else {
-			for factory in self.passthrough_factories.iter() { // look for a passthrough to use
-				if factory.should_create(&search) {
-					self.passthrough = Some(factory.create());
-					break;
-				}
-			}
-			self.selected = Some(0);
-			self.search = search.clone();
-		}
-
-		if let Some(passthrough) = self.passthrough.as_mut() {
+		if handle_update_placeholder(&search, &mut self.passthrough, &self.passthrough_factories) {
 			let mut search = search;
-			search.drain(0..passthrough.get_preamble().len());
-			passthrough.update_search(search)
+			search.drain(0..self.passthrough.as_ref().unwrap().get_preamble().len());
+
+			self.selected = Some(0);
+			self.search = self.passthrough.as_ref().unwrap().get_preamble().clone();
+
+			self.passthrough.as_mut().unwrap().update_search(search);
 		} else {
 			self.search = search;
 			self.active_list = ActiveList::FuzzyFinder;
@@ -141,9 +132,9 @@ impl State for DefaultState {
 		}
 	}
 
-	fn autocomplete(&mut self) -> String {
+	fn autocomplete(&mut self) -> (String, Option<String>) {
 		if let Some(passthrough) = self.passthrough.as_mut() {
-			return format!("{}{}", self.search, passthrough.autocomplete());
+			return passthrough_string(&self.search, passthrough.autocomplete());
 		}
 
 		self.active_list = ActiveList::Autocomplete;
@@ -159,7 +150,7 @@ impl State for DefaultState {
 
 		self.selected = Some(0);
 
-		return result;
+		(result, None)
 	}
 
 	fn get_command(&self) -> String {
@@ -172,8 +163,7 @@ impl State for DefaultState {
 
 	fn select_up(&mut self) -> (String, Option<String>) {
 		if let Some(passthrough) = self.passthrough.as_mut() {
-			let passthrough_string = passthrough.select_up().0;
-			return (format!("{}{}", self.search, passthrough_string), Some(passthrough_string));
+			return passthrough_string(&self.search, passthrough.select_up());
 		}
 
 		let list = get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref();
@@ -194,8 +184,7 @@ impl State for DefaultState {
 
 	fn select_down(&mut self) -> (String, Option<String>) {
 		if let Some(passthrough) = self.passthrough.as_mut() {
-			let passthrough_string = passthrough.select_down().0;
-			return (format!("{}{}", self.search, passthrough_string), Some(passthrough_string));
+			return passthrough_string(&self.search, passthrough.select_down());
 		}
 
 		let list = get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref();
