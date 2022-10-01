@@ -15,6 +15,10 @@ pub fn get_ui_list<'a>(state: &'a ActiveList, autocomplete: &'a List, fuzzyfind:
 }
 
 pub trait State {
+	fn get_factory(&self) -> &Box<dyn Factory>;
+
+	fn get_preamble(&self) -> &String;
+
 	fn get_active_list(&self) -> ActiveList;
 	fn get_autocomplete_list(&self) -> &List;
 	fn get_fuzzyfinder_list(&self) -> &List;
@@ -23,8 +27,8 @@ pub trait State {
 	fn autocomplete(&mut self) -> String;
 	fn get_command(&self) -> String;
 
-	fn select_up(&mut self) -> String;
-	fn select_down(&mut self) -> String;
+	fn select_up(&mut self) -> (String, Option<String>);
+	fn select_down(&mut self) -> (String, Option<String>);
 
 	// the list that we'll use in the ui
 	fn get_ui_list(&self) -> &List {

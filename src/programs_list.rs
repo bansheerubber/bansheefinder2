@@ -1,7 +1,7 @@
 use iced::{ Alignment, Column, Command, Container, Element, Length, Scrollable, Text, TextInput, alignment, container, scrollable, text_input };
 
 use crate::autocomplete2::{ Factory, State };
-use crate::autocomplete2::default::{ DefaultFactory, DefaultState };
+use crate::autocomplete2::default::DefaultFactory;
 use crate::launcher::launch_program;
 use crate::style;
 
@@ -44,13 +44,27 @@ impl View {
 				launch_program(self.state.get_command());
 			},
 			Message::SelectUp => {
-				self.search = self.state.select_up();
-				self.selected = Some(self.search.clone());
+				let (search_text, selected_item) = self.state.select_up();
+				let selected_item = if let Some(item) = selected_item {
+					item
+				} else {
+					search_text.clone()
+				};
+
+				self.search = search_text;
+				self.selected = Some(selected_item);
 				self.input_state.move_cursor_to_end();
 			},
 			Message::SelectDown => {
-				self.search = self.state.select_down();
-				self.selected = Some(self.search.clone());
+				let (search_text, selected_item) = self.state.select_down();
+				let selected_item = if let Some(item) = selected_item {
+					item
+				} else {
+					search_text.clone()
+				};
+
+				self.search = search_text;
+				self.selected = Some(selected_item);
 				self.input_state.move_cursor_to_end();
 			},
 			Message::Typed(search) => {
