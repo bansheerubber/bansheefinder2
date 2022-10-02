@@ -1,6 +1,4 @@
-use crate::autocomplete::killall::KillallFactory;
 use crate::autocomplete::open_project::OpenProjectFactory;
-use crate::autocomplete::sudo::SudoFactory;
 use crate::autocomplete::types::{
 	ActiveList,
 	CommandType,
@@ -14,8 +12,8 @@ use crate::autocomplete::types::{
 };
 use crate::path_interpreter::get_programs;
 
-fn fuzzyfind(programs: &Vec<String>, search: &String) -> Option<Vec<String>> {
-	let mut output = programs.iter()
+fn fuzzyfind(projects: &Vec<String>, search: &String) -> Option<Vec<String>> {
+	let mut output = projects.iter()
 		.fold(Vec::new(), |mut acc, program| {
 			if program.find(search).is_some() {
 				acc.push(program.clone())
@@ -33,8 +31,8 @@ fn fuzzyfind(programs: &Vec<String>, search: &String) -> Option<Vec<String>> {
 	Some(output)
 }
 
-fn autocomplete(programs: &Vec<String>, search: &String) -> Option<Vec<String>> {
-	let mut output = programs.iter()
+fn autocomplete(projects: &Vec<String>, search: &String) -> Option<Vec<String>> {
+	let mut output = projects.iter()
 		.fold(Vec::new(), |mut acc, program| {
 			if let Some(index) = program.find(search) {
 				if index == 0 {
@@ -54,10 +52,9 @@ fn autocomplete(programs: &Vec<String>, search: &String) -> Option<Vec<String>> 
 	Some(output)
 }
 
-pub struct DefaultState {
+pub struct KillallState {
 	active_list: ActiveList,
 	autocomplete: List,
-	default_list: Option<Vec<String>>,
 	factory: Box<dyn Factory>,
 	fuzzyfind: List,
 	passthrough: Option<Box<dyn State>>,
@@ -68,30 +65,16 @@ pub struct DefaultState {
 	selected: Option<usize>,
 }
 
-impl Default for DefaultState {
+impl Default for KillallState {
 	fn default() -> Self {
-		DefaultState {
+		KillallState {
 			active_list: ActiveList::default(),
 			autocomplete: List::default(),
-			default_list: Some(
-				vec![
-					"open-project",
-					"gitkraken",
-					"backup",
-					"steam",
-					"warsow",
-					"texstudio",
-					"restart",
-					"off",
-				].iter()
-				.map(|s| s.to_string())
-				.collect::<Vec<String>>()
-			),
-			factory: Box::new(DefaultFactory),
+			factory: Box::new(KillallFactory),
 			fuzzyfind: List::default(),
 			passthrough: None,
-			passthrough_factories: vec![Box::new(OpenProjectFactory), Box::new(SudoFactory), Box::new(KillallFactory)],
-			preamble: String::new(),
+			passthrough_factories: vec![Box::new(OpenProjectFactory)],
+			preamble: String::from("killall "),
 			programs: get_programs().unwrap(),
 			search: String::default(),
 			selected: None,
@@ -99,7 +82,7 @@ impl Default for DefaultState {
 	}
 }
 
-impl State for DefaultState {
+impl State for KillallState {
 	fn get_factory(&self) -> &Box<dyn Factory> {
 		&self.factory
 	}
@@ -109,10 +92,6 @@ impl State for DefaultState {
 	}
 
 	fn get_active_list(&self) -> ActiveList {
-		if self.search.len() == 0 {
-			return ActiveList::FuzzyFinder;
-		}
-
 		if let Some(passthrough) = self.passthrough.as_ref() {
 			passthrough.get_active_list()
 		} else {
@@ -129,10 +108,6 @@ impl State for DefaultState {
 	}
 
 	fn get_fuzzyfinder_list(&self) -> &List {
-		if self.search.len() == 0 {
-			return &self.default_list;
-		}
-
 		if let Some(passthrough) = self.passthrough.as_ref() {
 			passthrough.get_fuzzyfinder_list()
 		} else {
@@ -170,7 +145,6 @@ impl State for DefaultState {
 		} else {
 			self.search.clone()
 		};
-
 		self.autocomplete = autocomplete(&self.programs, &self.search);
 		self.fuzzyfind = fuzzyfind(&self.programs, &self.search);
 
@@ -180,11 +154,7 @@ impl State for DefaultState {
 	}
 
 	fn get_command(&self) -> (String, CommandType) {
-		if self.search.len() == 0 && self.selected.is_some() {
-			(self.default_list.as_ref().unwrap()[self.selected.unwrap()].clone(), CommandType::Normal)
-		} else {
-			passthrough_command(&self.search, CommandType::Normal, &self.passthrough)
-		}
+		passthrough_command(&self.search, CommandType::Normal, &self.passthrough)
 	}
 
 	fn select_up(&mut self) -> (String, Option<String>) {
@@ -192,12 +162,7 @@ impl State for DefaultState {
 			return passthrough_string(&self.search, passthrough.select_up());
 		}
 
-		let list = if self.search.len() == 0 {
-			self.default_list.as_ref()
-		} else {
-			get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref()
-		};
-
+		let list = get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref();
 		if let None = list {
 			self.selected = None;
 		} else if let None = self.selected {
@@ -218,12 +183,7 @@ impl State for DefaultState {
 			return passthrough_string(&self.search, passthrough.select_down());
 		}
 
-		let list = if self.search.len() == 0 {
-			self.default_list.as_ref()
-		} else {
-			get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref()
-		};
-
+		let list = get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref();
 		if let None = list {
 			self.selected = None;
 		} else if self.selected.unwrap() != 0 {
@@ -239,11 +199,11 @@ impl State for DefaultState {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct DefaultFactory;
+pub struct KillallFactory;
 
-impl Factory for DefaultFactory {
+impl Factory for KillallFactory {
 	fn should_create(&self, search: &String) -> bool {
-		if search.len() == 0 {
+		if search.len() >= 8 && &search[0..7] == "killall" {
 			true
 		} else {
 			false
@@ -251,6 +211,6 @@ impl Factory for DefaultFactory {
 	}
 
 	fn create(&self) -> Box<dyn State> {
-		Box::new(DefaultState::default())
+		Box::new(KillallState::default())
 	}
 }

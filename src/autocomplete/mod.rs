@@ -1,4 +1,5 @@
 pub mod default;
+pub mod killall;
 pub mod open_project;
 pub mod sudo;
 mod types;

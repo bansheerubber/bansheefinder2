@@ -1,3 +1,4 @@
+use crate::autocomplete::killall::KillallFactory;
 use crate::autocomplete::open_project::OpenProjectFactory;
 use crate::autocomplete::types::{
 	ActiveList,
@@ -73,7 +74,7 @@ impl Default for SudoState {
 			factory: Box::new(SudoFactory),
 			fuzzyfind: List::default(),
 			passthrough: None,
-			passthrough_factories: vec![Box::new(OpenProjectFactory)],
+			passthrough_factories: vec![Box::new(OpenProjectFactory), Box::new(KillallFactory)],
 			preamble: String::from("sudo "),
 			programs: get_programs().unwrap(),
 			search: String::default(),
