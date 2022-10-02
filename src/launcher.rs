@@ -1,4 +1,24 @@
+use std::time::{ SystemTime, UNIX_EPOCH };
+
+use crate::path_interpreter:: {
+	ProgramFrequency,
+	read_command_frequency,
+	write_command_frequency,
+};
+
 pub fn launch_program(program: String) {
+	let mut map = read_command_frequency();
+	let default = ProgramFrequency::default();
+	let program_frequency = map.get(&program).unwrap_or(&default);
+	map.insert(
+		program.clone(),
+		ProgramFrequency {
+			count: program_frequency.count + 1,
+			timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+		}
+	);
+	write_command_frequency(map);
+
 	let result = std::process::Command::new("sh")
 		.arg("-c")
 		.arg(format!("i3-msg exec {}", program))
