@@ -1,8 +1,8 @@
-use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use crate::autocomplete::killall::KillallFactory;
 use crate::autocomplete::open_project::OpenProjectFactory;
+use crate::autocomplete::program_sorting::{ autocomplete, fuzzyfind, };
 use crate::autocomplete::sudo::SudoFactory;
 use crate::autocomplete::types::{
 	ActiveList,
@@ -20,70 +20,6 @@ use crate::path_interpreter::{
 	get_programs,
 	read_command_frequency,
 };
-
-fn fuzzyfind(
-	programs: &Vec<String>,
-	program_frequency: &HashMap<String, ProgramFrequency>,
-	search: &String
-) -> Option<Vec<String>> {
-	let mut output = programs.iter()
-		.fold(Vec::new(), |mut acc, program| {
-			if program.find(search).is_some() {
-				acc.push(program.clone())
-			}
-
-			acc
-		});
-
-	output.sort_by(
-		|a, b| {
-			if program_frequency.contains_key(a) && program_frequency.contains_key(b) {
-				program_frequency[a].cmp(&program_frequency[b])
-			} else if program_frequency.contains_key(a) && !program_frequency.contains_key(b) {
-				Ordering::Less
-			} else if !program_frequency.contains_key(a) && program_frequency.contains_key(b) {
-				Ordering::Greater
-			} else {
-				a.len().cmp(&b.len())
-			}
-		}
-	);
-
-	Some(output)
-}
-
-fn autocomplete(
-	programs: &Vec<String>,
-	program_frequency: &HashMap<String, ProgramFrequency>,
-	search: &String
-) -> Option<Vec<String>> {
-	let mut output = programs.iter()
-		.fold(Vec::new(), |mut acc, program| {
-			if let Some(index) = program.find(search) {
-				if index == 0 {
-					acc.push(program.clone())
-				}
-			}
-
-			acc
-		});
-
-	output.sort_by(
-		|a, b| {
-			if program_frequency.contains_key(a) && program_frequency.contains_key(b) {
-				program_frequency[a].cmp(&program_frequency[b])
-			} else if program_frequency.contains_key(a) && !program_frequency.contains_key(b) {
-				Ordering::Less
-			} else if !program_frequency.contains_key(a) && program_frequency.contains_key(b) {
-				Ordering::Greater
-			} else {
-				a.len().cmp(&b.len())
-			}
-		}
-	);
-
-	Some(output)
-}
 
 pub struct DefaultState {
 	active_list: ActiveList,

@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use crate::autocomplete::killall::KillallFactory;
 use crate::autocomplete::open_project::OpenProjectFactory;
+use crate::autocomplete::program_sorting::{ autocomplete, fuzzyfind, };
 use crate::autocomplete::types::{
 	ActiveList,
 	CommandType,
@@ -11,47 +14,11 @@ use crate::autocomplete::types::{
 	passthrough_command,
 	passthrough_string,
 };
-use crate::path_interpreter::get_programs;
-
-fn fuzzyfind(projects: &Vec<String>, search: &String) -> Option<Vec<String>> {
-	let mut output = projects.iter()
-		.fold(Vec::new(), |mut acc, program| {
-			if program.find(search).is_some() {
-				acc.push(program.clone())
-			}
-
-			acc
-		});
-
-	output.sort_by(
-		|a, b| {
-			a.len().cmp(&b.len())
-		}
-	);
-
-	Some(output)
-}
-
-fn autocomplete(projects: &Vec<String>, search: &String) -> Option<Vec<String>> {
-	let mut output = projects.iter()
-		.fold(Vec::new(), |mut acc, program| {
-			if let Some(index) = program.find(search) {
-				if index == 0 {
-					acc.push(program.clone())
-				}
-			}
-
-			acc
-		});
-
-	output.sort_by(
-		|a, b| {
-			a.len().cmp(&b.len())
-		}
-	);
-
-	Some(output)
-}
+use crate::path_interpreter::{
+	ProgramFrequency,
+	get_programs,
+	read_command_frequency,
+};
 
 pub struct SudoState {
 	active_list: ActiveList,
@@ -62,6 +29,7 @@ pub struct SudoState {
 	passthrough_factories: Vec::<Box<dyn Factory>>,
 	preamble: String,
 	programs: Vec<String>,
+	program_frequency: HashMap<String, ProgramFrequency>,
 	search: String,
 	selected: Option<usize>,
 }
@@ -77,6 +45,7 @@ impl Default for SudoState {
 			passthrough_factories: vec![Box::new(OpenProjectFactory), Box::new(KillallFactory)],
 			preamble: String::from("sudo "),
 			programs: get_programs().unwrap(),
+			program_frequency: read_command_frequency(),
 			search: String::default(),
 			selected: None,
 		}
@@ -129,8 +98,8 @@ impl State for SudoState {
 			self.search = search;
 			self.active_list = ActiveList::FuzzyFinder;
 
-			self.autocomplete = autocomplete(&self.programs, &self.search);
-			self.fuzzyfind = fuzzyfind(&self.programs, &self.search);
+			self.autocomplete = autocomplete(&self.programs, &self.program_frequency, &self.search);
+			self.fuzzyfind = fuzzyfind(&self.programs, &self.program_frequency, &self.search);
 		}
 	}
 
@@ -146,8 +115,8 @@ impl State for SudoState {
 		} else {
 			self.search.clone()
 		};
-		self.autocomplete = autocomplete(&self.programs, &self.search);
-		self.fuzzyfind = fuzzyfind(&self.programs, &self.search);
+		self.autocomplete = autocomplete(&self.programs, &self.program_frequency, &self.search);
+		self.fuzzyfind = fuzzyfind(&self.programs, &self.program_frequency, &self.search);
 
 		self.selected = Some(0);
 
