@@ -57,6 +57,39 @@ impl text_input::StyleSheet for SearchInput {
 	}
 }
 
+// style for sudo password
+pub struct PasswordInput;
+impl text_input::StyleSheet for PasswordInput {
+	fn active(&self) -> text_input::Style {
+		text_input::Style {
+			background: Background::Color(DARK_PURPLE),
+			border_color: DARK_PURPLE,
+			border_radius: 0.0,
+			border_width: 1.0,
+		}
+	}
+
+	fn value_color(&self) -> Color {
+		TEXT_COLOR
+	}
+
+	fn placeholder_color(&self) -> Color {
+		DISABLED_TEXT_COLOR
+	}
+
+	fn focused(&self) -> text_input::Style {
+		self.active()
+	}
+
+	fn hovered(&self) -> text_input::Style {
+		self.focused()
+	}
+
+	fn selection_color(&self) -> Color {
+		LIGHT_PURPLE
+	}
+}
+
 // style for the program list
 pub struct ProgramList;
 impl scrollable::StyleSheet for ProgramList {

@@ -3,8 +3,9 @@ mod launcher;
 mod path_interpreter;
 mod programs_list;
 mod style;
+mod sudo_password;
 
-use iced::{ Application, Command, Container, Element, Length, Settings, Subscription, Text, executor };
+use iced::{ Application, Command, Container, Element, Length, Settings, Subscription, executor };
 
 enum CurrentView {
 	ProgramList,
@@ -15,12 +16,14 @@ enum CurrentView {
 enum Message {
 	EventOccurred(iced_native::Event),
 	ProgramsListMessage(programs_list::Message),
+	SudoPasswordViewMessage(sudo_password::Message),
 }
 
 struct Window {
 	current_view: CurrentView,
 	programs_list: programs_list::View,
 	sudo_command: Option<String>,
+	sudo_password_view: sudo_password::View,
 }
 
 impl Application for Window {
@@ -34,6 +37,7 @@ impl Application for Window {
 				current_view: CurrentView::ProgramList,
 				programs_list: programs_list::View::new(),
 				sudo_command: None,
+				sudo_password_view: sudo_password::View::new(),
 			},
 			Command::none()
 		)
@@ -71,14 +75,18 @@ impl Application for Window {
 						})
 					},
 					iced_native::keyboard::KeyCode::Enter => {
-						match self.programs_list.start_program() {
-							(command, autocomplete::CommandType::Normal) | (command, autocomplete::CommandType::OpenProject) => {
-								launcher::launch_program(command);
-							},
-							(command, autocomplete::CommandType::Sudo) => {
-								self.current_view = CurrentView::SudoPassword;
-								self.sudo_command = Some(command);
-							},
+						if let CurrentView::ProgramList = self.current_view {
+							match self.programs_list.start_program() {
+								(command, autocomplete::CommandType::Normal) | (command, autocomplete::CommandType::OpenProject) => {
+									launcher::launch_program(command);
+								},
+								(command, autocomplete::CommandType::Sudo) => {
+									self.current_view = CurrentView::SudoPassword;
+									self.sudo_command = Some(command);
+								},
+							}
+						} else {
+							launcher::launch_program_sudo(self.sudo_command.as_ref().unwrap().clone(), self.sudo_password_view.get_password());
 						}
 
 						Command::none()
@@ -106,6 +114,11 @@ impl Application for Window {
 					Self::Message::ProgramsListMessage(message)
 				})
 			},
+			Message::SudoPasswordViewMessage(message) => {
+				self.sudo_password_view.update(message).map(move |message| {
+					Self::Message::SudoPasswordViewMessage(message)
+				})
+			},
 		}
 	}
 
@@ -124,7 +137,9 @@ impl Application for Window {
 			},
 			CurrentView::SudoPassword => {
 				Container::new(
-					Text::new("")
+					self.sudo_password_view.view().map(move |message| {
+						Self::Message::SudoPasswordViewMessage(message)
+					})
 				)
 					.height(Length::Fill)
 					.padding(1)
