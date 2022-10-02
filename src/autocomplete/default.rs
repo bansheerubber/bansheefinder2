@@ -56,6 +56,7 @@ fn autocomplete(programs: &Vec<String>, search: &String) -> Option<Vec<String>> 
 pub struct DefaultState {
 	active_list: ActiveList,
 	autocomplete: List,
+	default_list: Option<Vec<String>>,
 	factory: Box<dyn Factory>,
 	fuzzyfind: List,
 	passthrough: Option<Box<dyn State>>,
@@ -71,6 +72,20 @@ impl Default for DefaultState {
 		DefaultState {
 			active_list: ActiveList::default(),
 			autocomplete: List::default(),
+			default_list: Some(
+				vec![
+					"open-project",
+					"gitkraken",
+					"backup",
+					"steam",
+					"warsow",
+					"texstudio",
+					"restart",
+					"off",
+				].iter()
+				.map(|s| s.to_string())
+				.collect::<Vec<String>>()
+			),
 			factory: Box::new(DefaultFactory),
 			fuzzyfind: List::default(),
 			passthrough: None,
@@ -93,6 +108,10 @@ impl State for DefaultState {
 	}
 
 	fn get_active_list(&self) -> ActiveList {
+		if self.search.len() == 0 {
+			return ActiveList::FuzzyFinder;
+		}
+
 		if let Some(passthrough) = self.passthrough.as_ref() {
 			passthrough.get_active_list()
 		} else {
@@ -109,6 +128,10 @@ impl State for DefaultState {
 	}
 
 	fn get_fuzzyfinder_list(&self) -> &List {
+		if self.search.len() == 0 {
+			return &self.default_list;
+		}
+
 		if let Some(passthrough) = self.passthrough.as_ref() {
 			passthrough.get_fuzzyfinder_list()
 		} else {
@@ -156,7 +179,11 @@ impl State for DefaultState {
 	}
 
 	fn get_command(&self) -> (String, CommandType) {
-		passthrough_command(&self.search, CommandType::Normal, &self.passthrough)
+		if self.search.len() == 0 && self.selected.is_some() {
+			(self.default_list.as_ref().unwrap()[self.selected.unwrap()].clone(), CommandType::Normal)
+		} else {
+			passthrough_command(&self.search, CommandType::Normal, &self.passthrough)
+		}
 	}
 
 	fn select_up(&mut self) -> (String, Option<String>) {
@@ -164,7 +191,12 @@ impl State for DefaultState {
 			return passthrough_string(&self.search, passthrough.select_up());
 		}
 
-		let list = get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref();
+		let list = if self.search.len() == 0 {
+			self.default_list.as_ref()
+		} else {
+			get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref()
+		};
+
 		if let None = list {
 			self.selected = None;
 		} else if let None = self.selected {
@@ -185,7 +217,12 @@ impl State for DefaultState {
 			return passthrough_string(&self.search, passthrough.select_down());
 		}
 
-		let list = get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref();
+		let list = if self.search.len() == 0 {
+			self.default_list.as_ref()
+		} else {
+			get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref()
+		};
+
 		if let None = list {
 			self.selected = None;
 		} else if self.selected.unwrap() != 0 {
