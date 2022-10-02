@@ -1,4 +1,4 @@
-use std::time::{ SystemTime, UNIX_EPOCH };
+use chrono::Local;
 
 use crate::path_interpreter:: {
 	ProgramFrequency,
@@ -7,17 +7,17 @@ use crate::path_interpreter:: {
 };
 
 pub fn launch_program(program: String) {
-	let mut map = read_command_frequency();
+	let mut frequency = read_command_frequency();
 	let default = ProgramFrequency::default();
-	let program_frequency = map.get(&program).unwrap_or(&default);
-	map.insert(
+	let program_frequency = frequency.map.get(&program).unwrap_or(&default);
+	frequency.map.insert(
 		program.clone(),
 		ProgramFrequency {
 			count: program_frequency.count + 1,
-			timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+			timestamp: Local::now().timestamp() as u64,
 		}
 	);
-	write_command_frequency(map);
+	write_command_frequency(frequency);
 
 	let result = std::process::Command::new("sh")
 		.arg("-c")

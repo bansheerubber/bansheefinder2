@@ -1,3 +1,4 @@
+use chrono::Local;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs::{ File, OpenOptions };
@@ -9,6 +10,37 @@ use std::path::Path;
 pub struct ProgramFrequency {
 	pub count: u16,
 	pub timestamp: u64,
+}
+
+#[derive(Default)]
+pub struct ProgramFrequencyMap {
+	pub map: HashMap<String, ProgramFrequency>,
+	pub max: u16,
+}
+
+pub fn compare_program_frequency(
+	this: &ProgramFrequency,
+	other: &ProgramFrequency,
+	frequencies: &ProgramFrequencyMap
+) -> Ordering {
+	let this_count_normalized = this.count as f64 / frequencies.max as f64;
+	let other_count_normalized = other.count as f64 / frequencies.max as f64;
+
+	let timestamp = Local::now().timestamp() as u64;
+
+	let this_duration_normalized = (1.07 as f64).powf((timestamp - this.timestamp) as f64 / (60.0 * 60.0 * 24.0));
+	let other_duration_normalized = (1.07 as f64).powf((timestamp - other.timestamp) as f64 / (60.0 * 60.0 * 24.0));
+
+	let this_score = this_count_normalized / 2.0 + this_duration_normalized / 2.0;
+	let other_score = other_count_normalized / 2.0 + other_duration_normalized / 2.0;
+
+	if this_score < other_score {
+		Ordering::Less
+	} else if this_score > other_score {
+		Ordering::Greater
+	} else {
+		Ordering::Equal
+	}
 }
 
 impl Ord for ProgramFrequency {
@@ -29,10 +61,10 @@ impl PartialOrd for ProgramFrequency {
 	}
 }
 
-pub fn read_command_frequency() -> HashMap<String, ProgramFrequency> {
+pub fn read_command_frequency() -> ProgramFrequencyMap {
 	let file = OpenOptions::new().read(true).open("/home/me/.local/share/bansheefinder/frequency.map");
 	let mut file = if let Err(_) = file {
-		return HashMap::new();
+		return ProgramFrequencyMap::default();
 	} else {
 		file.unwrap()
 	};
@@ -43,7 +75,8 @@ pub fn read_command_frequency() -> HashMap<String, ProgramFrequency> {
 		std::process::exit(0); // terminate program right away so we don't overwrite data
 	}
 
-	let mut output = HashMap::new();
+	let mut map = HashMap::new();
+	let mut max = 0;
 	let mut index = 0;
 	while index < contents.len() {
 		let string_size = contents[index];
@@ -55,13 +88,17 @@ pub fn read_command_frequency() -> HashMap<String, ProgramFrequency> {
 		let count = (contents[index + 1] as u16) << 8 | contents[index] as u16;
 		index += 2;
 
+		if count > max {
+			max = count;
+		}
+
 		let mut timestamp = 0;
 		for i in 0..8 {
 			timestamp |= (contents[index] as u64) << (i * 8);
 			index += 1;
 		}
 
-		output.insert(
+		map.insert(
 			string,
 			ProgramFrequency {
 				count,
@@ -70,7 +107,10 @@ pub fn read_command_frequency() -> HashMap<String, ProgramFrequency> {
 		);
 	}
 
-	return output;
+	return ProgramFrequencyMap {
+		max,
+		map,
+	};
 }
 
 fn handle_write(file: &mut File, buffer: &[u8]) -> bool {
@@ -82,7 +122,7 @@ fn handle_write(file: &mut File, buffer: &[u8]) -> bool {
 	}
 }
 
-pub fn write_command_frequency(map: HashMap<String, ProgramFrequency>) {
+pub fn write_command_frequency(map: ProgramFrequencyMap) {
 	let file = OpenOptions::new().write(true).create(true).open("/home/me/.local/share/bansheefinder/frequency.map");
 	let mut file = if let Err(error) = file {
 		eprintln!("Could not write file {:?}", error);
@@ -91,7 +131,7 @@ pub fn write_command_frequency(map: HashMap<String, ProgramFrequency>) {
 		file.unwrap()
 	};
 
-	for (key, value) in map {
+	for (key, value) in map.map {
 		if key.len() > 255 { // TODO fix this from happening in a nice way
 			continue;
 		}

@@ -1,14 +1,16 @@
 use std::cmp::Ordering;
-use std::collections::HashMap;
 
-use crate::path_interpreter::ProgramFrequency;
+use crate::path_interpreter::{
+	ProgramFrequencyMap,
+	compare_program_frequency,
+};
 
-fn sort_program(a: &String, b: &String, program_frequency: &HashMap<String, ProgramFrequency>) -> Ordering {
-	if program_frequency.contains_key(a) && program_frequency.contains_key(b) {
-		program_frequency[a].cmp(&program_frequency[b])
-	} else if program_frequency.contains_key(a) && !program_frequency.contains_key(b) {
+fn sort_program(a: &String, b: &String, program_frequency: &ProgramFrequencyMap) -> Ordering {
+	if program_frequency.map.contains_key(a) && program_frequency.map.contains_key(b) {
+		compare_program_frequency(&program_frequency.map[b], &program_frequency.map[a], program_frequency)
+	} else if program_frequency.map.contains_key(a) && !program_frequency.map.contains_key(b) {
 		Ordering::Less
-	} else if !program_frequency.contains_key(a) && program_frequency.contains_key(b) {
+	} else if !program_frequency.map.contains_key(a) && program_frequency.map.contains_key(b) {
 		Ordering::Greater
 	} else {
 		a.len().cmp(&b.len())
@@ -17,7 +19,7 @@ fn sort_program(a: &String, b: &String, program_frequency: &HashMap<String, Prog
 
 pub fn fuzzyfind(
 	programs: &Vec<String>,
-	program_frequency: &HashMap<String, ProgramFrequency>,
+	program_frequency: &ProgramFrequencyMap,
 	search: &String
 ) -> Option<Vec<String>> {
 	let mut output = programs.iter()
@@ -40,7 +42,7 @@ pub fn fuzzyfind(
 
 pub fn autocomplete(
 	programs: &Vec<String>,
-	program_frequency: &HashMap<String, ProgramFrequency>,
+	program_frequency: &ProgramFrequencyMap,
 	search: &String
 ) -> Option<Vec<String>> {
 	let mut output = programs.iter()

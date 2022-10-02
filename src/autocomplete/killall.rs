@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::autocomplete::open_project::OpenProjectFactory;
 use crate::autocomplete::program_sorting::{ autocomplete, fuzzyfind, };
 use crate::autocomplete::types::{
@@ -14,7 +12,7 @@ use crate::autocomplete::types::{
 	passthrough_string,
 };
 use crate::path_interpreter::{
-	ProgramFrequency,
+	ProgramFrequencyMap,
 	get_programs,
 	read_command_frequency,
 };
@@ -28,7 +26,7 @@ pub struct KillallState {
 	passthrough_factories: Vec::<Box<dyn Factory>>,
 	preamble: String,
 	programs: Vec<String>,
-	program_frequency: HashMap<String, ProgramFrequency>,
+	program_frequency: ProgramFrequencyMap,
 	search: String,
 	selected: Option<usize>,
 }

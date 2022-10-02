@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+chrono = "0.4.22"
 iced = { features = ["image", "tokio", "svg"], path = "../iced" }
 iced_graphics = { path = "../iced/graphics" }
 iced_futures = { path = "../iced/futures" }
