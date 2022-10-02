@@ -1,3 +1,6 @@
+use std::cmp::Ordering;
+use std::collections::HashMap;
+
 use crate::autocomplete::killall::KillallFactory;
 use crate::autocomplete::open_project::OpenProjectFactory;
 use crate::autocomplete::sudo::SudoFactory;
@@ -12,9 +15,17 @@ use crate::autocomplete::types::{
 	passthrough_command,
 	passthrough_string,
 };
-use crate::path_interpreter::get_programs;
+use crate::path_interpreter::{
+	ProgramFrequency,
+	get_programs,
+	read_command_frequency,
+};
 
-fn fuzzyfind(programs: &Vec<String>, search: &String) -> Option<Vec<String>> {
+fn fuzzyfind(
+	programs: &Vec<String>,
+	program_frequency: &HashMap<String, ProgramFrequency>,
+	search: &String
+) -> Option<Vec<String>> {
 	let mut output = programs.iter()
 		.fold(Vec::new(), |mut acc, program| {
 			if program.find(search).is_some() {
@@ -26,14 +37,26 @@ fn fuzzyfind(programs: &Vec<String>, search: &String) -> Option<Vec<String>> {
 
 	output.sort_by(
 		|a, b| {
-			a.len().cmp(&b.len())
+			if program_frequency.contains_key(a) && program_frequency.contains_key(b) {
+				program_frequency[a].cmp(&program_frequency[b])
+			} else if program_frequency.contains_key(a) && !program_frequency.contains_key(b) {
+				Ordering::Less
+			} else if !program_frequency.contains_key(a) && program_frequency.contains_key(b) {
+				Ordering::Greater
+			} else {
+				a.len().cmp(&b.len())
+			}
 		}
 	);
 
 	Some(output)
 }
 
-fn autocomplete(programs: &Vec<String>, search: &String) -> Option<Vec<String>> {
+fn autocomplete(
+	programs: &Vec<String>,
+	program_frequency: &HashMap<String, ProgramFrequency>,
+	search: &String
+) -> Option<Vec<String>> {
 	let mut output = programs.iter()
 		.fold(Vec::new(), |mut acc, program| {
 			if let Some(index) = program.find(search) {
@@ -47,7 +70,15 @@ fn autocomplete(programs: &Vec<String>, search: &String) -> Option<Vec<String>> 
 
 	output.sort_by(
 		|a, b| {
-			a.len().cmp(&b.len())
+			if program_frequency.contains_key(a) && program_frequency.contains_key(b) {
+				program_frequency[a].cmp(&program_frequency[b])
+			} else if program_frequency.contains_key(a) && !program_frequency.contains_key(b) {
+				Ordering::Less
+			} else if !program_frequency.contains_key(a) && program_frequency.contains_key(b) {
+				Ordering::Greater
+			} else {
+				a.len().cmp(&b.len())
+			}
 		}
 	);
 
@@ -64,6 +95,7 @@ pub struct DefaultState {
 	passthrough_factories: Vec::<Box<dyn Factory>>,
 	preamble: String,
 	programs: Vec<String>,
+	program_frequency: HashMap<String, ProgramFrequency>,
 	search: String,
 	selected: Option<usize>,
 }
@@ -93,6 +125,7 @@ impl Default for DefaultState {
 			passthrough_factories: vec![Box::new(OpenProjectFactory), Box::new(SudoFactory), Box::new(KillallFactory)],
 			preamble: String::new(),
 			programs: get_programs().unwrap(),
+			program_frequency: read_command_frequency(),
 			search: String::default(),
 			selected: None,
 		}
@@ -153,8 +186,8 @@ impl State for DefaultState {
 			self.search = search;
 			self.active_list = ActiveList::FuzzyFinder;
 
-			self.autocomplete = autocomplete(&self.programs, &self.search);
-			self.fuzzyfind = fuzzyfind(&self.programs, &self.search);
+			self.autocomplete = autocomplete(&self.programs, &self.program_frequency, &self.search);
+			self.fuzzyfind = fuzzyfind(&self.programs, &self.program_frequency, &self.search);
 		}
 	}
 
@@ -171,8 +204,8 @@ impl State for DefaultState {
 			self.search.clone()
 		};
 
-		self.autocomplete = autocomplete(&self.programs, &self.search);
-		self.fuzzyfind = fuzzyfind(&self.programs, &self.search);
+		self.autocomplete = autocomplete(&self.programs, &self.program_frequency, &self.search);
+		self.fuzzyfind = fuzzyfind(&self.programs, &self.program_frequency, &self.search);
 
 		self.selected = Some(0);
 

@@ -1,13 +1,32 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs::{ File, OpenOptions };
 use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 
-#[derive(Default)]
+#[derive(Default, Eq, PartialEq)]
 pub struct ProgramFrequency {
 	pub count: u16,
 	pub timestamp: u64,
+}
+
+impl Ord for ProgramFrequency {
+	fn cmp(&self, other: &Self) -> Ordering {
+		if self.count < other.count {
+			Ordering::Less
+		} else if self.count > other.count {
+			Ordering::Greater
+		} else {
+			Ordering::Equal
+		}
+	}
+}
+
+impl PartialOrd for ProgramFrequency {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		Some(self.cmp(other))
+	}
 }
 
 pub fn read_command_frequency() -> HashMap<String, ProgramFrequency> {
