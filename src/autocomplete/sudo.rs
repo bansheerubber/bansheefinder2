@@ -121,8 +121,13 @@ impl State for SudoState {
 		(result, None)
 	}
 
-	fn get_command(&self) -> (String, CommandType) {
-		passthrough_command(&self.search, CommandType::Sudo, &self.passthrough)
+	fn get_command(&self) -> (String, Option<String>, CommandType) {
+		passthrough_command(
+			&self.search,
+			&self.search.split(' ').nth(0).unwrap().to_string(),
+			CommandType::Sudo,
+			&self.passthrough
+		)
 	}
 
 	fn select_up(&mut self) -> (String, Option<String>) {

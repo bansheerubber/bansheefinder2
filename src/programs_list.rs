@@ -31,7 +31,7 @@ impl View {
 		}
 	}
 
-	pub fn start_program(&self) -> (String, CommandType) {
+	pub fn start_program(&self) -> (String, Option<String>, CommandType) {
 		self.state.get_command()
 	}
 

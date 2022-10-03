@@ -22,7 +22,7 @@ enum Message {
 struct Window {
 	current_view: CurrentView,
 	programs_list: programs_list::View,
-	sudo_command: Option<String>,
+	sudo_command: (Option<String>, Option<String>),
 	sudo_password_view: sudo_password::View,
 }
 
@@ -36,7 +36,7 @@ impl Application for Window {
 			Window {
 				current_view: CurrentView::ProgramList,
 				programs_list: programs_list::View::new(),
-				sudo_command: None,
+				sudo_command: (None, None),
 				sudo_password_view: sudo_password::View::new(),
 			},
 			Command::none()
@@ -77,16 +77,20 @@ impl Application for Window {
 					iced_native::keyboard::KeyCode::Enter => {
 						if let CurrentView::ProgramList = self.current_view {
 							match self.programs_list.start_program() {
-								(command, autocomplete::CommandType::Normal) | (command, autocomplete::CommandType::OpenProject) => {
-									launcher::launch_program(command);
+								(command, base_command, autocomplete::CommandType::Normal)
+									| (command, base_command, autocomplete::CommandType::OpenProject) =>
+								{
+									launcher::launch_program(command, base_command);
 								},
-								(command, autocomplete::CommandType::Sudo) => {
+								(command, base_command, autocomplete::CommandType::Sudo) => {
 									self.current_view = CurrentView::SudoPassword;
-									self.sudo_command = Some(command);
+									self.sudo_command = (Some(command), base_command);
 								},
 							}
 						} else {
-							launcher::launch_program_sudo(self.sudo_command.as_ref().unwrap().clone(), self.sudo_password_view.get_password());
+							let command = self.sudo_command.0.as_ref();
+							let base_command = self.sudo_command.1.clone();
+							launcher::launch_program_sudo(command.unwrap().clone(), base_command, self.sudo_password_view.get_password());
 						}
 
 						Command::none()

@@ -6,10 +6,10 @@ use crate::path_interpreter:: {
 	write_command_frequency,
 };
 
-pub fn launch_program(program: String) {
+pub fn update_frequency(program: &String) {
 	let mut frequency = read_command_frequency();
 	let default = ProgramFrequency::default();
-	let program_frequency = frequency.map.get(&program).unwrap_or(&default);
+	let program_frequency = frequency.map.get(program).unwrap_or(&default);
 	frequency.map.insert(
 		program.clone(),
 		ProgramFrequency {
@@ -18,6 +18,12 @@ pub fn launch_program(program: String) {
 		}
 	);
 	write_command_frequency(frequency);
+}
+
+pub fn launch_program(program: String, base_command: Option<String>) {
+	if let Some(base_command) = base_command {
+		update_frequency(&base_command);
+	}
 
 	let result = std::process::Command::new("sh")
 		.arg("-c")
@@ -31,7 +37,11 @@ pub fn launch_program(program: String) {
 	std::process::exit(1);
 }
 
-pub fn launch_program_sudo(program: String, password: String) {
+pub fn launch_program_sudo(program: String, base_command: Option<String>, password: String) {
+	if let Some(base_command) = base_command {
+		update_frequency(&base_command);
+	}
+
 	let program = program[5..].to_string(); // remove sudo preamble
 
 	let result = std::process::Command::new("sh")

@@ -119,8 +119,8 @@ impl State for OpenProjectState {
 		(result, None)
 	}
 
-	fn get_command(&self) -> (String, CommandType) { // only returns the project folder name
-		(self.search.clone(), CommandType::OpenProject)
+	fn get_command(&self) -> (String, Option<String>, CommandType) { // only returns the project folder name
+		(self.search.clone(), None, CommandType::OpenProject)
 	}
 
 	fn select_up(&mut self) -> (String, Option<String>) {

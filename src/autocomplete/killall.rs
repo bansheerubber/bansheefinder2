@@ -120,8 +120,8 @@ impl State for KillallState {
 		(result, None)
 	}
 
-	fn get_command(&self) -> (String, CommandType) {
-		passthrough_command(&self.search, CommandType::Normal, &self.passthrough)
+	fn get_command(&self) -> (String, Option<String>, CommandType) {
+		passthrough_command(&self.search, &String::from("killall"), CommandType::Normal, &self.passthrough)
 	}
 
 	fn select_up(&mut self) -> (String, Option<String>) {

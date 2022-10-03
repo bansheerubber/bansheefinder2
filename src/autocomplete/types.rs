@@ -31,7 +31,7 @@ pub trait State {
 
 	fn update_search(&mut self, search: String);
 	fn autocomplete(&mut self) -> (String, Option<String>);
-	fn get_command(&self) -> (String, CommandType);
+	fn get_command(&self) -> (String, Option<String>, CommandType);
 
 	fn select_up(&mut self) -> (String, Option<String>);
 	fn select_down(&mut self) -> (String, Option<String>);
@@ -84,13 +84,20 @@ pub fn passthrough_string(
 
 pub fn passthrough_command(
 	search: &String,
+	base_command: &String,
 	command_type: CommandType,
 	passthrough: &Option<Box<dyn State>>
-) -> (String, CommandType) {
+) -> (String, Option<String>, CommandType) {
 	if let Some(passthrough) = passthrough.as_ref() {
-		let (command, command_type) = passthrough.get_command();
-		(format!("{}{}", search, command), command_type)
+		let (passthrough_command, passthrough_base_command, passthrough_command_type) = passthrough.get_command();
+		let passthrough_base_command = if let None = passthrough_base_command {
+			Some(base_command.clone())
+		} else {
+			passthrough_base_command
+		};
+
+		(format!("{}{}", search, passthrough_command), passthrough_base_command, passthrough_command_type)
 	} else {
-		(search.clone(), command_type)
+		(search.clone(), Some(base_command.clone()), command_type)
 	}
 }

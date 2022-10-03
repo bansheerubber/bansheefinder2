@@ -146,11 +146,17 @@ impl State for DefaultState {
 		(result, None)
 	}
 
-	fn get_command(&self) -> (String, CommandType) {
+	fn get_command(&self) -> (String, Option<String>, CommandType) {
 		if self.search.len() == 0 && self.selected.is_some() {
-			(self.default_list.as_ref().unwrap()[self.selected.unwrap()].clone(), CommandType::Normal)
+			let command = self.default_list.as_ref().unwrap()[self.selected.unwrap()].clone();
+			(command.clone(), Some(command), CommandType::Normal)
 		} else {
-			passthrough_command(&self.search, CommandType::Normal, &self.passthrough)
+			passthrough_command(
+				&self.search,
+				&self.search.split(' ').nth(0).unwrap().to_string(),
+				CommandType::Normal,
+				&self.passthrough
+			)
 		}
 	}
 
