@@ -173,10 +173,10 @@ impl State for DefaultState {
 
 		if let None = list {
 			self.selected = None;
-		} else if let None = self.selected {
-			self.selected = Some(0);
-		} else if self.selected.unwrap() != list.unwrap().len() - 1 {
+		} else if self.selected.is_some() && self.selected.unwrap() != list.unwrap().len() - 1 {
 			self.selected = Some(self.selected.unwrap() + 1);
+		} else {
+			self.selected = Some(0);
 		}
 
 		if let Some(index) = self.selected {
@@ -199,10 +199,10 @@ impl State for DefaultState {
 
 		if let None = list {
 			self.selected = None;
-		} else if let None = self.selected {
-			self.selected = Some(0);
-		} else if self.selected.unwrap() != 0 {
+		} else if self.selected.is_some() && self.selected.unwrap() != 0 {
 			self.selected = Some(self.selected.unwrap() - 1);
+		} else {
+			self.selected = Some(list.unwrap().len() - 1);
 		}
 
 		if let Some(index) = self.selected {
