@@ -193,6 +193,8 @@ impl State for DefaultState {
 
 		if let None = list {
 			self.selected = None;
+		} else if let None = self.selected {
+			self.selected = Some(0);
 		} else if self.selected.unwrap() != 0 {
 			self.selected = Some(self.selected.unwrap() - 1);
 		}
