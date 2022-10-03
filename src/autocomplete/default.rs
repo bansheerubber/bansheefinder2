@@ -43,6 +43,7 @@ impl Default for DefaultState {
 				vec![
 					"open-project",
 					"gitkraken",
+					"okular",
 					"backup",
 					"steam",
 					"warsow",
