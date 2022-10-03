@@ -113,13 +113,14 @@ impl State for DefaultState {
 			let mut search = search;
 			search.drain(0..self.passthrough.as_ref().unwrap().get_preamble().len());
 
-			self.selected = Some(0);
+			self.selected = None;
 			self.search = self.passthrough.as_ref().unwrap().get_preamble().clone();
 
 			self.passthrough.as_mut().unwrap().update_search(search);
 		} else {
 			self.search = search;
 			self.active_list = ActiveList::FuzzyFinder;
+			self.selected = None;
 
 			self.autocomplete = autocomplete(&self.programs, &self.program_frequency, &self.search);
 			self.fuzzyfind = fuzzyfind(&self.programs, &self.program_frequency, &self.search);

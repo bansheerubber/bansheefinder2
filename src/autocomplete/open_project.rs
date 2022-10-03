@@ -98,6 +98,7 @@ impl State for OpenProjectState {
 	fn update_search(&mut self, search: String) {
 		self.search = search;
 		self.active_list = ActiveList::FuzzyFinder;
+		self.selected = None;
 
 		self.autocomplete = autocomplete(&self.projects, &self.search);
 		self.fuzzyfind = fuzzyfind(&self.projects, &self.search);
