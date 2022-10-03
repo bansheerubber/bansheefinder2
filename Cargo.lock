@@ -102,6 +102,7 @@ dependencies = [
  "iced_graphics",
  "iced_native",
  "iced_style",
+ "lazy_static",
  "tokio",
 ]
 

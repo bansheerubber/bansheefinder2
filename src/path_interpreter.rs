@@ -1,10 +1,22 @@
 use chrono::Local;
+use lazy_static::lazy_static;
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::{ HashMap, HashSet };
 use std::fs::{ File, OpenOptions };
 use std::io::Read;
 use std::io::Write;
 use std::path::Path;
+
+lazy_static! {
+	static ref IGNORED_PROGRAMS: HashSet<String> = {
+		let mut set = HashSet::new();
+		set.insert(String::from("restart"));
+		set.insert(String::from("off"));
+		set.insert(String::from("hibernate"));
+		set.insert(String::from("rest"));
+		return set;
+	};
+}
 
 #[derive(Default, Eq, PartialEq)]
 pub struct ProgramFrequency {
@@ -132,7 +144,7 @@ pub fn write_command_frequency(map: ProgramFrequencyMap) {
 	};
 
 	for (key, value) in map.map {
-		if key.len() > 255 { // TODO fix this from happening in a nice way
+		if key.len() > 255 || IGNORED_PROGRAMS.contains(&key) { // TODO fix this from happening in a nice way
 			continue;
 		}
 
