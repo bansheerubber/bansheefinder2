@@ -29,32 +29,33 @@ fn fuzzyfind(projects: &Vec<String>, search: &String) -> List {
 }
 
 fn autocomplete(projects: &Vec<String>, search: &String) -> Option<Autocomplete> {
-	let mut common_start = String::new();
-	for project in projects.iter() {
-		if let Some(index) = project.find(search) {
-			if index == 0 && project.len() > common_start.len() {
-				common_start = project.clone()
-			}
-		}
-	}
-
+	let mut common_start: Option<String> = None;
 	let mut output = projects.iter()
 		.fold(Vec::new(), |mut acc, project| {
 			if let Some(index) = project.find(search) {
 				if index == 0 {
 					acc.push(project.clone());
 
-					let mut stop = None;
-					let mut project_chars = project.chars();
-					let mut common_start_chars = common_start.chars();
-					for i in 0..std::cmp::min(project.len(), common_start.len()) {
-						if project_chars.next() != common_start_chars.next() {
-							stop = Some(i);
+					if let Some(common) = common_start.as_ref() {
+						let mut stop = None;
+						let mut project_chars = project.chars();
+						let mut common_start_chars = common.chars();
+						for i in 0..std::cmp::min(project.len(), common.len()) {
+							if project_chars.next() != common_start_chars.next() {
+								stop = Some(i);
+								break;
+							}
 						}
-					}
 
-					if let Some(index) = stop {
-						common_start = common_start[0..index].to_string();
+						if stop == None && common.len() > project.len() {
+							stop = Some(project.len());
+						}
+
+						if let Some(index) = stop {
+							common_start = Some(common[0..index].to_string());
+						}
+					} else {
+						common_start = Some(project.clone());
 					}
 				}
 			}
@@ -69,7 +70,7 @@ fn autocomplete(projects: &Vec<String>, search: &String) -> Option<Autocomplete>
 	);
 
 	Some(Autocomplete {
-		common_start,
+		common_start: common_start.unwrap_or_default(),
 		list: Some(output),
 	})
 }
