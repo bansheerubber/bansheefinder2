@@ -2,6 +2,7 @@ use crate::autocomplete::open_project::OpenProjectFactory;
 use crate::autocomplete::program_sorting::{ autocomplete, fuzzyfind, };
 use crate::autocomplete::types::{
 	ActiveList,
+	Autocomplete,
 	CommandType,
 	Factory,
 	List,
@@ -19,7 +20,7 @@ use crate::path_interpreter::{
 
 pub struct KillallState {
 	active_list: ActiveList,
-	autocomplete: List,
+	autocomplete: Option<Autocomplete>,
 	factory: Box<dyn Factory>,
 	fuzzyfind: List,
 	passthrough: Option<Box<dyn State>>,
@@ -35,7 +36,7 @@ impl Default for KillallState {
 	fn default() -> Self {
 		KillallState {
 			active_list: ActiveList::default(),
-			autocomplete: List::default(),
+			autocomplete: None,
 			factory: Box::new(KillallFactory),
 			fuzzyfind: List::default(),
 			passthrough: None,
@@ -69,8 +70,10 @@ impl State for KillallState {
 	fn get_autocomplete_list(&self) -> &List {
 		if let Some(passthrough) = self.passthrough.as_ref() {
 			passthrough.get_autocomplete_list()
+		} else if let Some(autocomplete) = self.autocomplete.as_ref() {
+			&autocomplete.list
 		} else {
-			&self.autocomplete
+			&None
 		}
 	}
 
@@ -107,18 +110,16 @@ impl State for KillallState {
 		}
 
 		self.active_list = ActiveList::Autocomplete;
-		let result = if let Some(list) = self.autocomplete.as_ref() {
-			self.search = list[0].clone();
-			list[0].clone()
-		} else {
-			self.search.clone()
-		};
+		if let Some(list) = self.autocomplete.as_ref() {
+			self.search = list.common_start.clone();
+		}
+
 		self.autocomplete = autocomplete(&self.programs, &self.program_frequency, &self.search);
 		self.fuzzyfind = fuzzyfind(&self.programs, &self.program_frequency, &self.search);
 
 		self.selected = Some(0);
 
-		(result, None)
+		(self.search.clone(), None)
 	}
 
 	fn get_command(&self) -> (String, Option<String>, CommandType) {

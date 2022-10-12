@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 
+use crate::autocomplete::types::Autocomplete;
 use crate::path_interpreter::{
 	ProgramFrequencyMap,
 	compare_program_frequency,
@@ -44,12 +45,34 @@ pub fn autocomplete(
 	programs: &Vec<String>,
 	program_frequency: &ProgramFrequencyMap,
 	search: &String
-) -> Option<Vec<String>> {
+) -> Option<Autocomplete> {
+	let mut common_start = String::new();
+	for program in programs.iter() {
+		if let Some(index) = program.find(search) {
+			if index == 0 && program.len() > common_start.len() {
+				common_start = program.clone()
+			}
+		}
+	}
+
 	let mut output = programs.iter()
 		.fold(Vec::new(), |mut acc, program| {
 			if let Some(index) = program.find(search) {
 				if index == 0 {
-					acc.push(program.clone())
+					acc.push(program.clone());
+
+					let mut stop = None;
+					let mut program_chars = program.chars();
+					let mut common_start_chars = common_start.chars();
+					for i in 0..std::cmp::min(program.len(), common_start.len()) {
+						if program_chars.next() != common_start_chars.next() {
+							stop = Some(i);
+						}
+					}
+
+					if let Some(index) = stop {
+						common_start = common_start[0..index].to_string();
+					}
 				}
 			}
 
@@ -62,5 +85,8 @@ pub fn autocomplete(
 		}
 	);
 
-	Some(output)
+	Some(Autocomplete {
+		common_start,
+		list: Some(output),
+	})
 }

@@ -1,5 +1,11 @@
 pub type List = Option<Vec<String>>;
 
+#[derive(Clone, Debug, Default)]
+pub struct Autocomplete {
+	pub common_start: String,
+	pub list: List,
+}
+
 pub enum CommandType {
 	Normal,
 	OpenProject,
@@ -13,9 +19,13 @@ pub enum ActiveList {
 	FuzzyFinder,
 }
 
-pub fn get_ui_list<'a>(state: &'a ActiveList, autocomplete: &'a List, fuzzyfind: &'a List) -> &'a List {
+pub fn get_ui_list<'a>(state: &'a ActiveList, autocomplete: &'a Option<Autocomplete>, fuzzyfind: &'a List) -> &'a List {
 	match state {
-		ActiveList::Autocomplete => autocomplete,
+		ActiveList::Autocomplete => if let Some(autocomplete) = autocomplete.as_ref() {
+			&autocomplete.list
+		} else {
+			&None
+		},
 		ActiveList::FuzzyFinder => fuzzyfind,
 	}
 }
