@@ -182,6 +182,7 @@ impl State for DefaultState {
 		}
 
 		if let Some(index) = self.selected {
+			self.search = list.unwrap()[index].clone();
 			(list.unwrap()[index].clone(), None)
 		} else {
 			(String::new(), None)
@@ -208,6 +209,7 @@ impl State for DefaultState {
 		}
 
 		if let Some(index) = self.selected {
+			self.search = list.unwrap()[index].clone();
 			(list.unwrap()[index].clone(), None)
 		} else {
 			(String::new(), None)
