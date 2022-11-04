@@ -21,6 +21,10 @@ pub fn update_frequency(program: &String) {
 }
 
 pub fn launch_program(program: String, base_command: Option<String>) {
+	if program.len() == 0 {
+		return;
+	}
+
 	if let Some(base_command) = base_command {
 		update_frequency(&base_command);
 	}
@@ -38,6 +42,10 @@ pub fn launch_program(program: String, base_command: Option<String>) {
 }
 
 pub fn launch_program_sudo(program: String, base_command: Option<String>, password: String) {
+	if program.len() == 0 {
+		return;
+	}
+
 	if let Some(base_command) = base_command {
 		update_frequency(&base_command);
 	}
