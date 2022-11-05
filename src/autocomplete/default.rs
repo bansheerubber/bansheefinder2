@@ -73,6 +73,10 @@ impl State for DefaultState {
 		&self.factory
 	}
 
+	fn get_replacement(&self) -> &String {
+		&self.preamble
+	}
+
 	fn get_preamble(&self) -> &String {
 		&self.preamble
 	}
@@ -114,7 +118,7 @@ impl State for DefaultState {
 	fn update_search(&mut self, search: String) {
 		if handle_update_placeholder(&search, &mut self.passthrough, &self.passthrough_factories) {
 			let mut search = search;
-			search.drain(0..self.passthrough.as_ref().unwrap().get_preamble().len());
+			search.drain(0..self.passthrough.as_ref().unwrap().get_replacement().len());
 
 			self.selected = None;
 			self.search = self.passthrough.as_ref().unwrap().get_preamble().clone();

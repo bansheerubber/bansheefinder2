@@ -106,6 +106,10 @@ impl State for OpenProjectState {
 		&self.factory
 	}
 
+	fn get_replacement(&self) -> &String {
+		&self.preamble
+	}
+
 	fn get_preamble(&self) -> &String {
 		&self.preamble
 	}

@@ -33,6 +33,7 @@ pub fn get_ui_list<'a>(state: &'a ActiveList, autocomplete: &'a Option<Autocompl
 pub trait State {
 	fn get_factory(&self) -> &Box<dyn Factory>;
 
+	fn get_replacement(&self) -> &String;
 	fn get_preamble(&self) -> &String;
 
 	fn get_active_list(&self) -> ActiveList;
