@@ -1,7 +1,4 @@
-use crate::autocomplete::killall::KillallFactory;
-use crate::autocomplete::open_project::OpenProjectFactory;
 use crate::autocomplete::program_sorting::{ autocomplete, fuzzyfind, };
-use crate::autocomplete::sudo::SudoFactory;
 use crate::autocomplete::types::{
 	ActiveList,
 	Autocomplete,
@@ -14,17 +11,15 @@ use crate::autocomplete::types::{
 	passthrough_command,
 	passthrough_string,
 };
-use crate::autocomplete::x11_forward::X11ForwardFactory;
 use crate::path_interpreter::{
 	ProgramFrequencyMap,
 	get_programs,
 	read_command_frequency,
 };
 
-pub struct DefaultState {
+pub struct X11ForwardState {
 	active_list: ActiveList,
 	autocomplete: Option<Autocomplete>,
-	default_list: Option<Vec<String>>,
 	factory: Box<dyn Factory>,
 	fuzzyfind: List,
 	passthrough: Option<Box<dyn State>>,
@@ -32,55 +27,37 @@ pub struct DefaultState {
 	preamble: String,
 	programs: Vec<String>,
 	program_frequency: ProgramFrequencyMap,
+	replacement: String,
 	search: String,
 	selected: Option<usize>,
 }
 
-impl Default for DefaultState {
+impl Default for X11ForwardState {
 	fn default() -> Self {
-		DefaultState {
+		X11ForwardState {
 			active_list: ActiveList::default(),
 			autocomplete: None,
-			default_list: Some(
-				vec![
-					"open-project",
-					"gitkraken",
-					"okular",
-					"backup",
-					"steam",
-					"warsow",
-					"texstudio",
-					"restart",
-					"off",
-				].iter()
-				.map(|s| s.to_string())
-				.collect::<Vec<String>>()
-			),
-			factory: Box::new(DefaultFactory),
+			factory: Box::new(X11ForwardFactory),
 			fuzzyfind: List::default(),
 			passthrough: None,
-			passthrough_factories: vec![
-				Box::new(OpenProjectFactory),
-				Box::new(SudoFactory),
-				Box::new(KillallFactory),
-				Box::new(X11ForwardFactory)
-			],
-			preamble: String::new(),
+			passthrough_factories: vec![],
+			preamble: String::from("ssh me@$(ping bansheestation -c 1 -q -W 1 | grep -q \"1 received\" && echo \"bansheestation\" || echo \"bansheestation-alt\") "),
 			programs: get_programs().unwrap(),
 			program_frequency: read_command_frequency(),
+			replacement: String::from("!"),
 			search: String::default(),
 			selected: None,
 		}
 	}
 }
 
-impl State for DefaultState {
+impl State for X11ForwardState {
 	fn get_factory(&self) -> &Box<dyn Factory> {
 		&self.factory
 	}
 
 	fn get_replacement(&self) -> &String {
-		&self.preamble
+		&self.replacement
 	}
 
 	fn get_preamble(&self) -> &String {
@@ -88,10 +65,6 @@ impl State for DefaultState {
 	}
 
 	fn get_active_list(&self) -> ActiveList {
-		if self.search.len() == 0 {
-			return ActiveList::FuzzyFinder;
-		}
-
 		if let Some(passthrough) = self.passthrough.as_ref() {
 			passthrough.get_active_list()
 		} else {
@@ -110,10 +83,6 @@ impl State for DefaultState {
 	}
 
 	fn get_fuzzyfinder_list(&self) -> &List {
-		if self.search.len() == 0 {
-			return &self.default_list;
-		}
-
 		if let Some(passthrough) = self.passthrough.as_ref() {
 			passthrough.get_fuzzyfinder_list()
 		} else {
@@ -159,17 +128,12 @@ impl State for DefaultState {
 	}
 
 	fn get_command(&self) -> (String, Option<String>, CommandType) {
-		if self.search.len() == 0 && self.selected.is_some() {
-			let command = self.default_list.as_ref().unwrap()[self.selected.unwrap()].clone();
-			(command.clone(), Some(command), CommandType::Normal)
-		} else {
-			passthrough_command(
-				&self.search,
-				&self.search.split(' ').nth(0).unwrap().to_string(),
-				CommandType::Normal,
-				&self.passthrough
-			)
-		}
+		passthrough_command(
+			&self.search,
+			&self.search[1..].to_string(),
+			CommandType::Normal,
+			&self.passthrough
+		)
 	}
 
 	fn select_up(&mut self) -> (String, Option<String>) {
@@ -177,12 +141,7 @@ impl State for DefaultState {
 			return passthrough_string(&self.search, passthrough.select_up());
 		}
 
-		let list = if self.search.len() == 0 {
-			self.default_list.as_ref()
-		} else {
-			get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref()
-		};
-
+		let list = get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref();
 		if let None = list {
 			self.selected = None;
 		} else if self.selected.is_some() && self.selected.unwrap() != list.unwrap().len() - 1 {
@@ -192,6 +151,7 @@ impl State for DefaultState {
 		}
 
 		if let Some(index) = self.selected {
+			self.search = list.unwrap()[index].clone();
 			(list.unwrap()[index].clone(), None)
 		} else {
 			(String::new(), None)
@@ -203,12 +163,7 @@ impl State for DefaultState {
 			return passthrough_string(&self.search, passthrough.select_down());
 		}
 
-		let list = if self.search.len() == 0 {
-			self.default_list.as_ref()
-		} else {
-			get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref()
-		};
-
+		let list = get_ui_list(&self.active_list, &self.autocomplete, &self.fuzzyfind).as_ref();
 		if let None = list {
 			self.selected = None;
 		} else if self.selected.is_some() && self.selected.unwrap() != 0 {
@@ -218,6 +173,7 @@ impl State for DefaultState {
 		}
 
 		if let Some(index) = self.selected {
+			self.search = list.unwrap()[index].clone();
 			(list.unwrap()[index].clone(), None)
 		} else {
 			(String::new(), None)
@@ -226,11 +182,11 @@ impl State for DefaultState {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct DefaultFactory;
+pub struct X11ForwardFactory;
 
-impl Factory for DefaultFactory {
+impl Factory for X11ForwardFactory {
 	fn should_create(&self, search: &String) -> bool {
-		if search.len() == 0 {
+		if search.len() >= 1 && search.chars().nth(0).unwrap() == '!' {
 			true
 		} else {
 			false
@@ -238,6 +194,6 @@ impl Factory for DefaultFactory {
 	}
 
 	fn create(&self) -> Box<dyn State> {
-		Box::new(DefaultState::default())
+		Box::new(X11ForwardState::default())
 	}
 }
