@@ -1,10 +1,6 @@
 use chrono::Local;
 
-use crate::path_interpreter:: {
-	ProgramFrequency,
-	read_command_frequency,
-	write_command_frequency,
-};
+use crate::path_interpreter::{read_command_frequency, write_command_frequency, ProgramFrequency};
 
 pub fn update_frequency(program: &String) {
 	let mut frequency = read_command_frequency();
@@ -15,7 +11,7 @@ pub fn update_frequency(program: &String) {
 		ProgramFrequency {
 			count: program_frequency.count + 1,
 			timestamp: Local::now().timestamp() as u64,
-		}
+		},
 	);
 	write_command_frequency(frequency);
 }
@@ -29,9 +25,16 @@ pub fn launch_program(program: String, base_command: Option<String>) {
 		update_frequency(&base_command);
 	}
 
+	let launch_command = if let Ok(launch_command) = std::env::var("BANSHEEFINDER3_LAUNCH_COMMAND")
+	{
+		launch_command
+	} else {
+		"niri msg action spawn -- ".to_string()
+	};
+
 	let result = std::process::Command::new("sh")
 		.arg("-c")
-		.arg(format!("i3-msg exec {}", program))
+		.arg(format!("{} {}", launch_command, program))
 		.output();
 
 	if let Err(error) = result {

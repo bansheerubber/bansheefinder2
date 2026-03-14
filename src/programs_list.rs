@@ -1,8 +1,16 @@
-use iced::{ Alignment, Column, Command, Container, Element, Length, Scrollable, Text, TextInput, alignment, container, scrollable, text_input };
+use iced::alignment::Horizontal;
+use iced::border::radius;
+use iced::widget::operation::move_cursor_to_end;
+use iced::widget::scrollable::{Direction, Rail, Scrollbar};
+use iced::widget::{self, column, container, scrollable, text, text_input};
+use iced::{Alignment, Border, Color, Element, Length, Shadow, Task};
 
-use crate::autocomplete::{ CommandType, Factory, State };
 use crate::autocomplete::default::DefaultFactory;
-use crate::style;
+use crate::autocomplete::{CommandType, Factory, State};
+use crate::style::{
+	DARK_PURPLE, DISABLED_TEXT_COLOR, LIGHT_PURPLE, SCROLLBAR_PURPLE, SELECTED_TEXT_COLOR,
+	TEXT_COLOR,
+};
 
 #[derive(Clone, Debug)]
 pub enum Message {
@@ -13,21 +21,19 @@ pub enum Message {
 }
 
 pub struct View {
-	input_state: text_input::State,
-	scroll_state: scrollable::State,
 	search: String,
 	selected: Option<String>,
 	state: Box<dyn State>,
+	pub text_input: widget::Id,
 }
 
 impl View {
 	pub fn new() -> Self {
 		View {
-			input_state: text_input::State::focused(),
-			scroll_state: scrollable::State::new(),
 			search: String::new(),
 			selected: None,
 			state: DefaultFactory::default().create(),
+			text_input: widget::Id::unique(),
 		}
 	}
 
@@ -35,7 +41,7 @@ impl View {
 		self.state.get_command()
 	}
 
-	pub fn update(&mut self, message: Message) -> Command<Message> {
+	pub fn update(&mut self, message: Message) -> Task<Message> {
 		match message {
 			Message::Autocomplete => {
 				let (search_text, selected_item) = self.state.autocomplete();
@@ -47,8 +53,8 @@ impl View {
 
 				self.search = search_text;
 				self.selected = Some(selected_item);
-				self.input_state.move_cursor_to_end();
-			},
+				move_cursor_to_end(self.text_input.clone())
+			}
 			Message::SelectUp => {
 				let (search_text, selected_item) = self.state.select_up();
 				let selected_item = if let Some(item) = selected_item {
@@ -59,8 +65,8 @@ impl View {
 
 				self.search = search_text;
 				self.selected = Some(selected_item);
-				self.input_state.move_cursor_to_end();
-			},
+				move_cursor_to_end(self.text_input.clone())
+			}
 			Message::SelectDown => {
 				let (search_text, selected_item) = self.state.select_down();
 				let selected_item = if let Some(item) = selected_item {
@@ -71,63 +77,121 @@ impl View {
 
 				self.search = search_text;
 				self.selected = Some(selected_item);
-				self.input_state.move_cursor_to_end();
-			},
+				move_cursor_to_end(self.text_input.clone())
+			}
 			Message::Typed(search) => {
 				self.selected = None;
 				self.search = search.clone();
 				self.selected = None;
 				self.state.update_search(search);
-			},
+				Task::none()
+			}
 		}
-
-		Command::none()
 	}
 
-	pub fn view(&mut self) -> Element<Message> {
-		let mut scrollable = Scrollable::new(&mut self.scroll_state);
+	pub fn view(&self) -> Element<'_, Message> {
+		let mut scrollable_column = column![];
 
 		let list = self.state.get_ui_list();
 		if let Some(programs) = list.as_ref() {
 			for autocomplete in programs.iter() {
-				scrollable = scrollable.push(
-					Container::new(
-						Text::new(autocomplete)
-							.horizontal_alignment(alignment::Horizontal::Left)
+				let moved_autocomplete = autocomplete.clone();
+
+				scrollable_column = scrollable_column.push(
+					container(
+						text(autocomplete)
+							.align_x(Horizontal::Left)
 							.width(Length::Fill)
-							.size(10)
+							.size(9),
 					)
-						.padding(3)
-						.width(Length::Fill)
-						.style(
-							if self.selected.is_some() && autocomplete == self.selected.as_ref().unwrap() {
-								Box::new(style::SelectedProgram) as Box<dyn container::StyleSheet>
-							} else {
-								Box::new(style::Program) as Box<dyn container::StyleSheet>
+					.padding(3)
+					.width(Length::Fill)
+					.style(move |_| {
+						if self.selected.is_some()
+							&& &moved_autocomplete == self.selected.as_ref().unwrap()
+						{
+							container::Style {
+								text_color: Some(TEXT_COLOR),
+								background: Some(LIGHT_PURPLE.into()),
+								border: Border::default(),
+								shadow: Shadow::default(),
+								snap: false,
 							}
-						)
+						} else {
+							container::Style {
+								text_color: Some(DISABLED_TEXT_COLOR),
+								background: Some(DARK_PURPLE.into()),
+								border: Border::default(),
+								shadow: Shadow::default(),
+								snap: false,
+							}
+						}
+					}),
 				);
 			}
 		}
 
-		Column::new()
-			.padding(0)
-			.align_items(Alignment::Center)
-			.push(
-				TextInput::new(
-					&mut self.input_state,
-					"",
-					&self.search,
-					Message::Typed,
-				)
-					.size(15)
-					.padding(7)
-					.style(style::SearchInput)
-			)
-			.push(
-				scrollable
-			)
-			.into()
-
+		column![
+			text_input("", &self.search)
+				.id(self.text_input.clone())
+				.size(15)
+				.on_input(Message::Typed)
+				.padding(7)
+				.style(|_, _| {
+					text_input::Style {
+						background: DARK_PURPLE.into(),
+						border: Border::default(),
+						icon: Color::BLACK,
+						placeholder: DISABLED_TEXT_COLOR,
+						value: TEXT_COLOR,
+						selection: SELECTED_TEXT_COLOR,
+					}
+				}),
+			scrollable(scrollable_column)
+				.direction(Direction::Vertical(
+					Scrollbar::default().scroller_width(7.0).margin(1.0)
+				))
+				.style(|_, _| scrollable::Style {
+					container: container::Style {
+						text_color: Some(TEXT_COLOR),
+						background: Some(Color::TRANSPARENT.into()),
+						border: Border::default(),
+						shadow: Shadow::default(),
+						snap: false,
+					},
+					vertical_rail: Rail {
+						background: Some(Color::TRANSPARENT.into()),
+						border: Border::default(),
+						scroller: scrollable::Scroller {
+							background: SCROLLBAR_PURPLE.into(),
+							border: Border::default()
+								.width(0)
+								.rounded(radius(5.0))
+								.color(SCROLLBAR_PURPLE),
+						}
+					},
+					horizontal_rail: Rail {
+						background: Some(Color::TRANSPARENT.into()),
+						border: Border::default(),
+						scroller: scrollable::Scroller {
+							background: SCROLLBAR_PURPLE.into(),
+							border: Border::default()
+								.width(0)
+								.rounded(radius(5.0))
+								.color(SCROLLBAR_PURPLE),
+						}
+					},
+					gap: Some(Color::WHITE.into()),
+					auto_scroll: scrollable::AutoScroll {
+						background: SCROLLBAR_PURPLE.into(),
+						border: Border::default(),
+						shadow: Shadow::default(),
+						icon: SCROLLBAR_PURPLE.into(),
+					},
+				}),
+		]
+		.padding(0)
+		.align_x(Alignment::Center)
+		.into()
 	}
 }

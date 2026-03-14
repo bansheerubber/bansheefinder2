@@ -1,8 +1,8 @@
 use chrono::Local;
 use lazy_static::lazy_static;
 use std::cmp::Ordering;
-use std::collections::{ HashMap, HashSet };
-use std::fs::{ File, OpenOptions };
+use std::collections::{HashMap, HashSet};
+use std::fs::{File, OpenOptions};
 use std::io::Read;
 use std::io::Write;
 use std::path::Path;
@@ -33,15 +33,18 @@ pub struct ProgramFrequencyMap {
 pub fn compare_program_frequency(
 	this: &ProgramFrequency,
 	other: &ProgramFrequency,
-	frequencies: &ProgramFrequencyMap
+	frequencies: &ProgramFrequencyMap,
 ) -> Ordering {
 	let this_count_normalized = this.count as f64 / frequencies.max as f64;
 	let other_count_normalized = other.count as f64 / frequencies.max as f64;
 
 	let timestamp = Local::now().timestamp() as u64;
 
-	let this_duration_normalized = (1.07 as f64).powf((timestamp - this.timestamp) as f64 / (60.0 * 60.0 * 24.0));
-	let other_duration_normalized = (1.07 as f64).powf((timestamp - other.timestamp) as f64 / (60.0 * 60.0 * 24.0));
+	let this_duration_normalized =
+		(1.07 as f64).powf((timestamp - this.timestamp) as f64 / (60.0 * 60.0 * 24.0));
+
+	let other_duration_normalized =
+		(1.07 as f64).powf((timestamp - other.timestamp) as f64 / (60.0 * 60.0 * 24.0));
 
 	let this_score = this_count_normalized / 2.0 + this_duration_normalized / 2.0;
 	let other_score = other_count_normalized / 2.0 + other_duration_normalized / 2.0;
@@ -74,7 +77,10 @@ impl PartialOrd for ProgramFrequency {
 }
 
 pub fn read_command_frequency() -> ProgramFrequencyMap {
-	let file = OpenOptions::new().read(true).open("/home/me/.local/share/bansheefinder/frequency.map");
+	let file = OpenOptions::new()
+		.read(true)
+		.open("/home/me/.local/share/bansheefinder/frequency.map");
+
 	let mut file = if let Err(_) = file {
 		return ProgramFrequencyMap::default();
 	} else {
@@ -94,7 +100,9 @@ pub fn read_command_frequency() -> ProgramFrequencyMap {
 		let string_size = contents[index];
 		index += 1;
 
-		let string = String::from_utf8(contents[index..index + string_size as usize].to_vec()).unwrap();
+		let string =
+			String::from_utf8(contents[index..index + string_size as usize].to_vec()).unwrap();
+
 		index += string_size as usize;
 
 		let count = (contents[index + 1] as u16) << 8 | contents[index] as u16;
@@ -110,19 +118,10 @@ pub fn read_command_frequency() -> ProgramFrequencyMap {
 			index += 1;
 		}
 
-		map.insert(
-			string,
-			ProgramFrequency {
-				count,
-				timestamp,
-			}
-		);
+		map.insert(string, ProgramFrequency { count, timestamp });
 	}
 
-	return ProgramFrequencyMap {
-		max,
-		map,
-	};
+	return ProgramFrequencyMap { max, map };
 }
 
 fn handle_write(file: &mut File, buffer: &[u8]) -> bool {
@@ -135,16 +134,21 @@ fn handle_write(file: &mut File, buffer: &[u8]) -> bool {
 }
 
 pub fn write_command_frequency(map: ProgramFrequencyMap) {
-	let file = OpenOptions::new().write(true).create(true).open("/home/me/.local/share/bansheefinder/frequency.map");
+	let file = OpenOptions::new()
+		.write(true)
+		.create(true)
+		.open("/home/me/.local/share/bansheefinder/frequency.map");
+
 	let mut file = if let Err(error) = file {
-		eprintln!("Could not write file {:?}", error);
+		eprintln!("Could not write command freq file {:?}", error);
 		return;
 	} else {
 		file.unwrap()
 	};
 
 	for (key, value) in map.map {
-		if key.len() > 255 || IGNORED_PROGRAMS.contains(&key) { // TODO fix this from happening in a nice way
+		if key.len() > 255 || IGNORED_PROGRAMS.contains(&key) {
+			// TODO fix this from happening in a nice way
 			continue;
 		}
 
@@ -169,14 +173,15 @@ pub fn get_programs() -> Option<Vec<String>> {
 	let paths = if let Ok(path) = std::env::var("PATH") {
 		path
 	} else {
-		return None
+		return None;
 	};
 
 	let mut output = Vec::new();
 	for directory in paths.split(':') {
 		let path = Path::new(directory);
 		if let Ok(read_directory) = std::fs::read_dir(path) {
-			for program in read_directory { // read all programs in directory
+			for program in read_directory {
+				// read all programs in directory
 				output.push(program.unwrap().file_name().into_string().unwrap());
 			}
 		}
@@ -187,7 +192,8 @@ pub fn get_programs() -> Option<Vec<String>> {
 
 pub fn get_projects() -> Option<Vec<String>> {
 	let mut output = Vec::new();
-	for program in std::fs::read_dir("/home/me/Projects").unwrap() { // read all programs in directory
+	for program in std::fs::read_dir("/home/me/Projects").unwrap() {
+		// read all programs in directory
 		output.push(program.unwrap().file_name().into_string().unwrap());
 	}
 

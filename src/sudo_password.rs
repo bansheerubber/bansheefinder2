@@ -1,6 +1,9 @@
-use iced::{ Alignment, Column, Command, Container, Element, Length, Space, Text, TextInput, text_input };
+use iced::{
+	widget::{self, column, container, text, text_input, Space},
+	Alignment, Border, Color, Element, Length, Padding, Task,
+};
 
-use crate::style;
+use crate::style::{DARK_PURPLE, DISABLED_TEXT_COLOR, SELECTED_TEXT_COLOR, TEXT_COLOR};
 
 #[derive(Clone, Debug)]
 pub enum Message {
@@ -8,15 +11,15 @@ pub enum Message {
 }
 
 pub struct View {
-	input_state: text_input::State,
 	password: String,
+	pub text_input: widget::Id,
 }
 
 impl View {
 	pub fn new() -> Self {
 		View {
-			input_state: text_input::State::focused(),
 			password: String::new(),
+			text_input: widget::Id::unique(),
 		}
 	}
 
@@ -24,46 +27,40 @@ impl View {
 		self.password.clone()
 	}
 
-	pub fn update(&mut self, message: Message) -> Command<Message> {
+	pub fn update(&mut self, message: Message) -> Task<Message> {
 		match message {
 			Message::Typed(password) => {
 				self.password = password;
-			},
+			}
 		}
 
-		Command::none()
+		Task::none()
 	}
 
-	pub fn view(&mut self) -> Element<Message> {
-		Column::new()
-			.padding(0)
-			.align_items(Alignment::Center)
-			.push(
-				Space::new(Length::Units(0), Length::Units(5))
-			)
-			.push(
-				Container::new(
-					Text::new("Password")
-						.size(14)
-						.width(Length::Fill)
-				)
-					.width(Length::Fill)
-					.padding([0, 0, 0, 7])
-			)
-			.push(
-				TextInput::new(
-					&mut self.input_state,
-					"",
-					&self.password,
-					Message::Typed,
-				)
-					.size(15)
-					.padding([4, 7, 4, 7])
-					.password()
-					.style(style::PasswordInput)
-			)
-			.height(Length::Fill)
-			.into()
-
+	pub fn view(&self) -> Element<'_, Message> {
+		column![
+			Space::new().height(Length::Fixed(5.0)),
+			container(text("Password").size(14).width(Length::Fill))
+				.width(Length::Fill)
+				.padding(Padding::default().left(7)), // [0, 0, 0, 7]
+			text_input("", &self.password)
+				.id(self.text_input.clone())
+				.size(15)
+				.secure(true)
+				.on_input(Message::Typed)
+				.padding(Padding::default().top(4).right(7).bottom(4).left(7)) // [4, 7, 4, 7]
+				.style(|_, _| text_input::Style {
+					background: DARK_PURPLE.into(),
+					border: Border::default(),
+					icon: Color::BLACK,
+					placeholder: DISABLED_TEXT_COLOR,
+					value: TEXT_COLOR,
+					selection: SELECTED_TEXT_COLOR,
+				})
+		]
+		.padding(0)
+		.align_x(Alignment::Center)
+		.height(Length::Fill)
+		.into()
 	}
 }

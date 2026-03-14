@@ -1,4 +1,10 @@
-use iced::{ Background, Color, container, scrollable, text_input };
+use iced::Color;
+
+pub const SCROLLBAR_PURPLE: Color = Color::from_rgb(
+	0x28 as f32 / 255.0,
+	0x1A as f32 / 255.0,
+	0x29 as f32 / 255.0,
+);
 
 pub const DARK_PURPLE: Color = Color::from_rgb(
 	0x1E as f32 / 255.0,
@@ -18,140 +24,14 @@ pub const DISABLED_TEXT_COLOR: Color = Color::from_rgb(
 	0xB7 as f32 / 255.0,
 );
 
+pub const SELECTED_TEXT_COLOR: Color = Color::from_rgb(
+	0x73 as f32 / 255.0,
+	0x5E as f32 / 255.0,
+	0x6C as f32 / 255.0,
+);
+
 pub const LIGHT_PURPLE: Color = Color::from_rgb(
 	0x38 as f32 / 255.0,
 	0x26 as f32 / 255.0,
 	0x3F as f32 / 255.0,
 );
-
-// style for program list search
-pub struct SearchInput;
-impl text_input::StyleSheet for SearchInput {
-	fn active(&self) -> text_input::Style {
-		text_input::Style {
-			background: Background::Color(DARK_PURPLE),
-			border_color: DARK_PURPLE,
-			border_radius: 0.0,
-			border_width: 1.0,
-		}
-	}
-
-	fn value_color(&self) -> Color {
-		TEXT_COLOR
-	}
-
-	fn placeholder_color(&self) -> Color {
-		DISABLED_TEXT_COLOR
-	}
-
-	fn focused(&self) -> text_input::Style {
-		self.active()
-	}
-
-	fn hovered(&self) -> text_input::Style {
-		self.focused()
-	}
-
-	fn selection_color(&self) -> Color {
-		LIGHT_PURPLE
-	}
-}
-
-// style for sudo password
-pub struct PasswordInput;
-impl text_input::StyleSheet for PasswordInput {
-	fn active(&self) -> text_input::Style {
-		text_input::Style {
-			background: Background::Color(DARK_PURPLE),
-			border_color: DARK_PURPLE,
-			border_radius: 0.0,
-			border_width: 1.0,
-		}
-	}
-
-	fn value_color(&self) -> Color {
-		TEXT_COLOR
-	}
-
-	fn placeholder_color(&self) -> Color {
-		DISABLED_TEXT_COLOR
-	}
-
-	fn focused(&self) -> text_input::Style {
-		self.active()
-	}
-
-	fn hovered(&self) -> text_input::Style {
-		self.focused()
-	}
-
-	fn selection_color(&self) -> Color {
-		LIGHT_PURPLE
-	}
-}
-
-// style for the program list
-pub struct ProgramList;
-impl scrollable::StyleSheet for ProgramList {
-	fn active(&self) -> scrollable::Scrollbar {
-		scrollable::Scrollbar {
-			background: Some(Background::Color(Color::TRANSPARENT)),
-			border_color: Color::TRANSPARENT,
-			border_radius: 0.0,
-			border_width: 0.0,
-			scroller: scrollable::Scroller {
-				border_color: DARK_PURPLE,
-				border_radius: 5.0,
-				border_width: 0.0,
-				color: LIGHT_PURPLE
-			},
-		}
-	}
-
-	fn hovered(&self) -> scrollable::Scrollbar {
-		self.active()
-	}
-
-	fn dragging(&self) -> scrollable::Scrollbar {
-		self.active()
-	}
-}
-
-// style for the application
-pub struct Application;
-impl container::StyleSheet for Application {
-	fn style(&self) -> container::Style {
-		container::Style {
-			background: Some(Background::Color(DARK_PURPLE)),
-			border_color: LIGHT_PURPLE,
-			border_radius: 0.0,
-			border_width: 1.0,
-			text_color: Some(DISABLED_TEXT_COLOR),
-			..container::Style::default()
-		}
-	}
-}
-
-// style for a program in the program list
-pub struct Program;
-impl container::StyleSheet for Program {
-	fn style(&self) -> container::Style {
-		container::Style {
-			background: Some(Background::Color(DARK_PURPLE)),
-			text_color: Some(DISABLED_TEXT_COLOR),
-			..container::Style::default()
-		}
-	}
-}
-
-// style for a selected program in the program list
-pub struct SelectedProgram;
-impl container::StyleSheet for SelectedProgram {
-	fn style(&self) -> container::Style {
-		container::Style {
-			background: Some(Background::Color(LIGHT_PURPLE)),
-			text_color: Some(TEXT_COLOR),
-			..container::Style::default()
-		}
-	}
-}

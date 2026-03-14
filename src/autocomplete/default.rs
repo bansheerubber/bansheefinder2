@@ -43,10 +43,8 @@ impl Default for DefaultState {
 			autocomplete: None,
 			default_list: Some(
 				vec![
-					"open-project",
 					"gitkraken",
 					"okular",
-					"backup",
 					"steam",
 					"warsow",
 					"texstudio",
@@ -147,13 +145,17 @@ impl State for DefaultState {
 
 		self.active_list = ActiveList::Autocomplete;
 		if let Some(list) = self.autocomplete.as_ref() {
-			self.search = list.common_start.clone();
+			if list.common_start.len() != 0 {
+				self.search = list.common_start.clone();
+			}
 		}
 
 		self.autocomplete = autocomplete(&self.programs, &self.program_frequency, &self.search);
 		self.fuzzyfind = fuzzyfind(&self.programs, &self.program_frequency, &self.search);
 
-		self.selected = Some(0);
+		if self.search.clone().len() != 0 {
+			self.selected = Some(0);
+		}
 
 		(self.search.clone(), None)
 	}

@@ -1,2 +1,3 @@
 #!/bin/sh
-cp ./target/release/bansheefinder2 $HOME/.local/bin/bansheefinder2
+cargo build --release
+cp ./target/release/bansheefinder3 $HOME/.local/bin/bansheefinder3

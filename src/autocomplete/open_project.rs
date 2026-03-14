@@ -142,13 +142,17 @@ impl State for OpenProjectState {
 	fn autocomplete(&mut self) -> (String, Option<String>) {
 		self.active_list = ActiveList::Autocomplete;
 		if let Some(list) = self.autocomplete.as_ref() {
-			self.search = list.common_start.clone();
+			if list.common_start.len() != 0 {
+				self.search = list.common_start.clone();
+			}
 		}
 
 		self.autocomplete = autocomplete(&self.projects, &self.search);
 		self.fuzzyfind = fuzzyfind(&self.projects, &self.search);
 
-		self.selected = Some(0);
+		if self.search.clone().len() != 0 {
+			self.selected = Some(0);
+		}
 
 		(self.search.clone(), None)
 	}
